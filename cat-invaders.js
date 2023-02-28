@@ -1,7 +1,9 @@
 import {defs, tiny} from './examples/common.js';
+import {Text_Line} from './examples/text-demo.js'
+import {Body} from './examples/collisions-demo.js'
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
 // TODO: cat model goes here
@@ -77,6 +79,7 @@ class Base_Scene extends Scene {
             'cat': new Cat(),
             'bullet': new Bullet(),
             'enemy': new Enemy(),
+            'text': new Text_Line(35), // change text length here
         };
 
         // *** Materials
@@ -108,6 +111,16 @@ class Base_Scene extends Scene {
 
         // TODO for testing purposes
         this.spawn = false;
+
+        // To show text you need a Material like this one:
+        const texture = new defs.Textured_Phong(1);
+        this.text_image = new Material(texture, {
+            ambient: 1, diffusivity: 0, specularity: 0,
+            texture: new Texture("assets/text.png")
+        });
+
+        // for keeping track of score
+        this.score = 0;
     }
 
     display(context, program_state) {
@@ -212,6 +225,7 @@ export class CatInvaders extends Base_Scene {
             center = this.draw_bullet(context, program_state, center, i);
         }
 
+        // spawning for test purposes
         if (this.spawn)
             if ((this.counter%90)==0) {
                 // spawn enemies in a row
@@ -234,6 +248,21 @@ export class CatInvaders extends Base_Scene {
             let center = Mat4.identity();
             center = this.draw_enemy(context, program_state, center, i);
         }
+
+        // displaying "press space" message when paused
+        if (this.stopped){
+            // note: 3 in the z coordinate so that text shows up *on top* of any other items
+            let center = Mat4.identity().times(Mat4.translation(-12, 10, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Press space to start or continue.";
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+        }
+
+        // displaying score
+        let top_left = Mat4.identity().times(Mat4.translation(-18, 20, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+        let score_string = "Score: " + this.score;
+        this.shapes.text.set_string(score_string, context.context);
+        this.shapes.text.draw(context, program_state, top_left, this.text_image);
 
     }
 }
