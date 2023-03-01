@@ -90,6 +90,11 @@ class Base_Scene extends Scene {
                 {ambient: .4, diffusivity: .6, color: hex_color("FF0000")}),
         };
 
+        // for easy changing
+        this.top_of_screen = 20;
+        this.bottom_of_screen = 0;
+        this.enemy_spawn_time = 90;
+
         // position of cat
         this.position = 0;
 
@@ -112,15 +117,21 @@ class Base_Scene extends Scene {
         // TODO for testing purposes
         this.spawn = false;
 
+        // for keeping track of score
+        this.score = 0;
+
+        // level variables
+        this.level = 0;
+        this.transition = false; // for transition screen ("Next level: x")
+        this.level_time = 999;
+        this.transition_time = 99;
+
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
         this.text_image = new Material(texture, {
             ambient: 1, diffusivity: 0, specularity: 0,
             texture: new Texture("assets/text.png")
         });
-
-        // for keeping track of score
-        this.score = 0;
     }
 
     display(context, program_state) {
@@ -187,7 +198,7 @@ export class CatInvaders extends Base_Scene {
     {
         model_transform = model_transform.times(Mat4.translation(this.enemy_x.at(index), this.enemy_y.at(index), 0));
         this.shapes.enemy.draw(context, program_state, model_transform, this.materials.bullet_material);
-        if (!this.stopped & (this.counter%30)==0) // note that the number has to be < half of the other number below
+        if (!this.stopped & (this.counter%(this.enemy_spawn_time / 3))==0) // moves 3x as fast as spawning rate
             this.enemy_y[index] = this.enemy_y.at(index) - 1;
         return model_transform;
     }
@@ -197,72 +208,102 @@ export class CatInvaders extends Base_Scene {
         const blue = hex_color("#1a9ffa");
         let model_transform = Mat4.identity();
         let time = program_state.animation_time / 1000;
-        if (!this.stopped)
-            this.counter = this.counter+1;
 
-        model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
-
-        // draws the cat at current position
-        this.shapes.cat.draw(context, program_state, model_transform, this.materials.plastic.override({color: blue}));
-
-        // if "s" has been pressed, spawn a new bullet
-        if (this.shot) {
-            this.shot = false;
-            this.bullet_x.push(this.position);
-            this.bullet_y.push(0);
+        // at a certain point in time, increase difficulty
+        // TODO consider changing time or make it based on score
+        if (this.counter%this.level_time == 0 ) {
+            this.level = this.level + 1;
+            this.transition = true;
         }
 
-        for (let i = 0; i < this.bullet_x.length; i++) {
-            // if the bullet is too far up, remove it
-            if (this.bullet_y.at(i) > 30) // arbitrary number for top edge of screen TODO perhaps fix
-            {
-                this.bullet_x.shift();
-                this.bullet_y.shift();
+        // TODO consider making a separate counter for transitions
+        // (potentially problems with spawning being offset)
+        // other potential solution: reset counter to 0 when new level starts
+        if (!this.stopped || this.transition)
+            this.counter = this.counter + 1;
+
+        // normal game play if not transitioning to next level
+        if (!this.transition) {
+
+            model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
+
+            // draws the cat at current position
+            this.shapes.cat.draw(context, program_state, model_transform, this.materials.plastic.override({color: blue}));
+
+            // if "s" has been pressed, spawn a new bullet
+            if (this.shot) {
+                this.shot = false;
+                this.bullet_x.push(this.position);
+                this.bullet_y.push(0);
             }
 
-            // draw the bullets
-            let center = Mat4.identity();
-            center = this.draw_bullet(context, program_state, center, i);
-        }
-
-        // spawning for test purposes
-        if (this.spawn)
-            if ((this.counter%90)==0) {
-                // spawn enemies in a row
-                for (let i = -5; i<6; i++)
+            for (let i = 0; i < this.bullet_x.length; i++) {
+                // if the bullet is too far up, remove it
+                if (this.bullet_y.at(i) > this.top_of_screen * 1.5)
                 {
-                    this.enemy_x.push(i*3);
-                    this.enemy_y.push(20); // also arbitrary number for top edge of screen TODO fix
+                    this.bullet_x.shift();
+                    this.bullet_y.shift();
                 }
+
+                // draw the bullets
+                let center = Mat4.identity();
+                center = this.draw_bullet(context, program_state, center, i);
             }
 
-        for (let i = 0; i<this.enemy_x.length; i++) {
-            // if the enemy is too far down, remove it
-            if (this.enemy_y.at(i) <= 0) // arbitrary number for top edge of screen TODO perhaps fix
-            {
-                this.enemy_x.shift();
-                this.enemy_y.shift();
-            }
+            // spawning for test purposes
+            if (this.spawn)
+                if ((this.counter % this.enemy_spawn_time) == 0) {
+                    // spawn enemies in a row
+                    for (let i = -5; i < 6; i++) {
+                        this.enemy_x.push(i * 3);
+                        this.enemy_y.push(this.top_of_screen);
+                    }
+                }
 
-            // draw the bullets
-            let center = Mat4.identity();
-            center = this.draw_enemy(context, program_state, center, i);
+            for (let i = 0; i < this.enemy_x.length; i++) {
+                // if the enemy is too far down, remove it
+                if (this.enemy_y.at(i) <= 0)
+                {
+                    this.enemy_x.shift();
+                    this.enemy_y.shift();
+                }
+
+                // draw the bullets
+                let center = Mat4.identity();
+                center = this.draw_enemy(context, program_state, center, i);
+            }
+            // displaying "press space" message when paused
+            if (this.stopped){
+                // note: 3 in the z coordinate so that text shows up *on top* of any other items
+                let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let start_string = "Press space to start or continue.";
+                this.shapes.text.set_string(start_string, context.context);
+                this.shapes.text.draw(context, program_state, center, this.text_image);
+            }
         }
-
-        // displaying "press space" message when paused
-        if (this.stopped){
-            // note: 3 in the z coordinate so that text shows up *on top* of any other items
-            let center = Mat4.identity().times(Mat4.translation(-12, 10, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Press space to start or continue.";
+        // if on transitioning screen, display next level
+        else {
+            let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Next Level: " + this.level;
             this.shapes.text.set_string(start_string, context.context);
             this.shapes.text.draw(context, program_state, center, this.text_image);
+            // after some time, return to normal gameplay
+            if ((this.counter-this.transition_time)%this.level_time == 0)
+            {
+                this.transition = false;
+            }
         }
-
         // displaying score
-        let top_left = Mat4.identity().times(Mat4.translation(-18, 20, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+        let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
         let score_string = "Score: " + this.score;
         this.shapes.text.set_string(score_string, context.context);
         this.shapes.text.draw(context, program_state, top_left, this.text_image);
+
+        // displaying current level
+        let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+        let lvl_string = "Level: " + this.level;
+        this.shapes.text.set_string(lvl_string, context.context);
+        this.shapes.text.draw(context, program_state, middle, this.text_image);
 
     }
 }
