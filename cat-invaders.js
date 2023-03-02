@@ -80,6 +80,7 @@ class Base_Scene extends Scene {
             'bullet': new Bullet(),
             'enemy': new Enemy(),
             'text': new Text_Line(35), // change text length here
+            'wall': new defs.Cube(),
         };
 
         // *** Materials
@@ -87,13 +88,31 @@ class Base_Scene extends Scene {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
             bullet_material: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("FF0000")}),
+                {ambient: .4, diffusivity: .6, color: hex_color("#FFffff")}),
+            enemy_material: new Material(new defs.Phong_Shader(),
+                {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")})
         };
+
+        // Make simpler dummy shapes for representing all other shapes during collisions:
+        this.colliders = [
+            {intersect_test: Body.intersect_sphere, points: new defs.Subdivision_Sphere(1), leeway: .5},
+            {intersect_test: Body.intersect_sphere, points: new defs.Subdivision_Sphere(2), leeway: .3},
+            {intersect_test: Body.intersect_cube, points: new defs.Cube(), leeway: .1}
+        ];
+        // change this to switch to a different dummy shape
+        this.collider_selection = 0;
 
         // for easy changing
         this.top_of_screen = 20;
         this.bottom_of_screen = 0;
         this.enemy_spawn_time = 90;
+
+        this.top_edge = new Body(this.shapes.wall, this.materials.plastic, vec3(20, 0.5, 0.5))
+            .emplace(Mat4.translation(-10, this.top_of_screen+1, 0), 0, 0);
+        this.bottom_edge = new Body(this.shapes.wall, this.materials.plastic, vec3(20, 0.5, 0.5))
+            .emplace(Mat4.translation(-10, this.bottom_of_screen-1, 0), 0, 0);
+        this.top_edge.inverse = Mat4.inverse(this.top_edge.drawn_location);
+        this.bottom_edge.inverse = Mat4.inverse(this.bottom_edge.drawn_location);
 
         // position of cat
         this.position = 0;
@@ -102,12 +121,16 @@ class Base_Scene extends Scene {
         this.shot = false;
 
         // locations of current bullets
-        this.bullet_x = [];
-        this.bullet_y = [];
+        // this.bullet_x = [];
+        // this.bullet_y = [];
+        this.bullets = [];
+        this.bullet_velocity = vec3(0, 1, 0);
 
         // locations of current enemies
-        this.enemy_x = [];
-        this.enemy_y = [];
+        // this.enemy_x = [];
+        // this.enemy_y = [];
+        this.enemies = [];
+        this.enemy_velocity = vec3(0, -0.5, 0);
 
         this.stopped = true;
 
@@ -185,22 +208,92 @@ export class CatInvaders extends Base_Scene {
         });
     }
 
-    draw_bullet(context, program_state, model_transform, index) {
-        model_transform = model_transform.times(Mat4.translation(this.bullet_x.at(index), this.bullet_y.at(index), 0));
-        model_transform = model_transform.times(Mat4.scale(0.5, 0.5, 0.5)); // TODO maybe delete later, just for shrinking-cube purposes
-        this.shapes.bullet.draw(context, program_state, model_transform, this.materials.plastic);
-        if (!this.stopped)
-            this.bullet_y[index] = this.bullet_y.at(index) + 1;
-        return model_transform;
+    draw_bullet(context, program_state) {
+        //const {points, leeway} = this.colliders[this.collider_selection];
+        //const size = vec3(1 + leeway, 1 + leeway, 1 + leeway);
+        for (let b of this.bullets) {
+            this.shapes.bullet.draw(context, program_state, b.drawn_location, this.materials.bullet_material);
+        }
+        // model_transform = model_transform.times(Mat4.translation(this.bullet_x.at(index), this.bullet_y.at(index), 0));
+        // model_transform = model_transform.times(Mat4.scale(0.5, 0.5, 0.5)); // TODO maybe delete later, just for shrinking-cube purposes
+        // this.shapes.bullet.draw(context, program_state, model_transform, this.materials.plastic);
+        // if (!this.stopped)
+        //     this.bullet_y[index] = this.bullet_y.at(index) + 1;
+        // return model_transform;
     }
 
-    draw_enemy(context, program_state, model_transform, index)
+    draw_enemy(context, program_state)
     {
-        model_transform = model_transform.times(Mat4.translation(this.enemy_x.at(index), this.enemy_y.at(index), 0));
-        this.shapes.enemy.draw(context, program_state, model_transform, this.materials.bullet_material);
-        if (!this.stopped & (this.counter%(this.enemy_spawn_time / 3))==0) // moves 3x as fast as spawning rate
-            this.enemy_y[index] = this.enemy_y.at(index) - 1;
-        return model_transform;
+        //const {points, leeway} = this.colliders[this.collider_selection];
+        //const size = vec3(1 + leeway, 1 + leeway, 1 + leeway);
+        for (let b of this.enemies) {
+            this.shapes.enemy.draw(context, program_state, b.drawn_location, this.materials.enemy_material);
+        }
+        // model_transform = model_transform.times(Mat4.translation(this.enemy_x.at(index), this.enemy_y.at(index), 0));
+        // this.shapes.enemy.draw(context, program_state, model_transform, this.materials.bullet_material);
+        // if (!this.stopped & (this.counter%(this.enemy_spawn_time / 3))==0) // moves 3x as fast as spawning rate
+        //     this.enemy_y[index] = this.enemy_y.at(index) - 1;
+        // return model_transform;
+    }
+
+    add_bullet(position)
+    {
+        this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet_material, vec3(0.5, 0.5, 0.5))
+            .emplace(Mat4.translation(position, this.bottom_of_screen, 0), this.bullet_velocity, 0));
+    }
+
+    add_enemy(position)
+    {
+        this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
+            .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0));
+    }
+
+    remove_bullet(index)
+    {
+        if (index < this.bullets.length)
+            this.bullets.splice(index, 1);
+    }
+    remove_enemy(index)
+    {
+        if (index < this.enemies.length)
+            this.enemies.splice(index, 1);
+    }
+    check_collisions()
+    {
+        const collider = this.colliders[this.collider_selection];
+        let i1 = 0;
+        let i2 = 0;
+        for (let a of this.bullets)
+        {
+            for (let b of this.enemies)
+            {
+                // if bullet has collided with enemy
+                if (a.check_if_colliding(b, collider))
+                {
+                    this.remove_bullet(i1);
+                    this.remove_enemy(i2);
+                }
+                if (b.check_if_colliding(this.bottom_edge, collider))
+                    this.remove_enemy(i2);
+                i2 = i2+1;
+            }
+            if (a.check_if_colliding(this.top_edge, collider))
+                this.remove_bullet(i1);
+            i1 = i1+1;
+        }
+    }
+
+    update_state()
+    {
+        for (let a of this.bullets)
+        {
+            a.drawn_location = a.drawn_location.times(Mat4.translation(0, 1, 0));
+            a.inverse = Mat4.inverse(a.drawn_location);
+        }
+        for (let b of this.enemies) {
+            b.drawn_location = b.drawn_location.times(Mat4.translation(0, -1 / 10, 0));
+            b.inverse = Mat4.inverse(b.drawn_location);
+        }
     }
 
     display(context, program_state) {
@@ -223,7 +316,7 @@ export class CatInvaders extends Base_Scene {
             this.counter = this.counter + 1;
 
         // normal game play if not transitioning to next level
-        if (!this.transition) {
+        if (!this.transition && !this.stopped) {
 
             model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
 
@@ -233,56 +326,58 @@ export class CatInvaders extends Base_Scene {
             // if "s" has been pressed, spawn a new bullet
             if (this.shot) {
                 this.shot = false;
-                this.bullet_x.push(this.position);
-                this.bullet_y.push(0);
+                this.add_bullet(this.position);
+                // this.bullet_x.push(this.position);
+                // this.bullet_y.push(0);
             }
 
-            for (let i = 0; i < this.bullet_x.length; i++) {
-                // if the bullet is too far up, remove it
-                if (this.bullet_y.at(i) > this.top_of_screen * 1.5)
-                {
-                    this.bullet_x.shift();
-                    this.bullet_y.shift();
-                }
+            // for (let i = 0; i < this.bullets.length; i++) {
+            //
+            // // for (let i = 0; i < this.bullet_x.length; i++) {
+            // //     // if the bullet is too far up, remove it
+            // //     if (this.bullet_y.at(i) > this.top_of_screen * 1.5)
+            // //     {
+            // //         this.bullet_x.shift();
+            // //         this.bullet_y.shift();
+            // //     }
+            //
+            //     // draw the bullets
+            //     let center = Mat4.identity();
+            //     center = this.draw_bullet(context, program_state, center, i);
+            // }
 
-                // draw the bullets
-                let center = Mat4.identity();
-                center = this.draw_bullet(context, program_state, center, i);
-            }
+            this.update_state();
+            this.check_collisions();
+
+            this.draw_bullet(context, program_state);
 
             // spawning for test purposes
             if (this.spawn)
                 if ((this.counter % this.enemy_spawn_time) == 0) {
                     // spawn enemies in a row
-                    for (let i = -5; i < 6; i++) {
-                        this.enemy_x.push(i * 3);
-                        this.enemy_y.push(this.top_of_screen);
+                    for (let i = -9; i < 10; i+=3) {
+                        this.add_enemy(i);
                     }
                 }
 
-            for (let i = 0; i < this.enemy_x.length; i++) {
-                // if the enemy is too far down, remove it
-                if (this.enemy_y.at(i) <= 0)
-                {
-                    this.enemy_x.shift();
-                    this.enemy_y.shift();
-                }
+            this.draw_enemy(context, program_state);
 
-                // draw the bullets
-                let center = Mat4.identity();
-                center = this.draw_enemy(context, program_state, center, i);
-            }
-            // displaying "press space" message when paused
-            if (this.stopped){
-                // note: 3 in the z coordinate so that text shows up *on top* of any other items
-                let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-                let start_string = "Press space to start or continue.";
-                this.shapes.text.set_string(start_string, context.context);
-                this.shapes.text.draw(context, program_state, center, this.text_image);
-            }
+            // for (let i = 0; i < this.enemies.length; i++) {
+            // //for (let i = 0; i < this.enemy_x.length; i++) {
+            //     // if the enemy is too far down, remove it
+            //     // if (this.enemy_y.at(i) <= 0)
+            //     // {
+            //     //     this.enemy_x.shift();
+            //     //     this.enemy_y.shift();
+            //     // }
+            //
+            //     // draw the bullets
+            //     let center = Mat4.identity();
+            //     center = this.draw_enemy(context, program_state, center, i);
+            // }
         }
         // if on transitioning screen, display next level
-        else {
+        else if (!this.stopped) {
             let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
             let start_string = "Next Level: " + this.level;
             this.shapes.text.set_string(start_string, context.context);
@@ -293,6 +388,14 @@ export class CatInvaders extends Base_Scene {
                 this.transition = false;
             }
         }
+        // displaying "press space" message when paused
+        if (this.stopped){
+            // note: 3 in the z coordinate so that text shows up *on top* of any other items
+            let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Press space to start or continue.";
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+        }
         // displaying score
         let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
         let score_string = "Score: " + this.score;
@@ -301,7 +404,7 @@ export class CatInvaders extends Base_Scene {
 
         // displaying current level
         let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let lvl_string = "Level: " + this.level;
+        let lvl_string = "Level: " + this.level + " # of bullets: " + this.bullets.length; // TODO remove testing
         this.shapes.text.set_string(lvl_string, context.context);
         this.shapes.text.draw(context, program_state, middle, this.text_image);
 
