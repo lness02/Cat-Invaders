@@ -240,12 +240,16 @@ export class CatInvaders extends Base_Scene {
     {
         this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet_material, vec3(0.5, 0.5, 0.5))
             .emplace(Mat4.translation(position, this.bottom_of_screen, 0), this.bullet_velocity, 0));
+        let a = this.bullets.at(this.bullets.length-1);
+        a.inverse = Mat4.inverse(a.drawn_location);
     }
 
     add_enemy(position)
     {
         this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
             .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0));
+        let a = this.enemies.at(this.enemies.length-1);
+            a.inverse = Mat4.inverse(a.drawn_location);
     }
 
     remove_bullet(index)
@@ -270,15 +274,16 @@ export class CatInvaders extends Base_Scene {
                 // if bullet has collided with enemy
                 if (a.check_if_colliding(b, collider))
                 {
-                    this.remove_bullet(i1);
-                    this.remove_enemy(i2);
+                    this.remove_bullet(this.bullets.indexOf(a));
+                    this.remove_enemy(this.enemies.indexOf(b));
+                    this.score = this.score+1;
                 }
-                if (b.check_if_colliding(this.bottom_edge, collider))
-                    this.remove_enemy(i2);
+                // if (b.check_if_colliding(this.bottom_edge, collider))
+                //     this.remove_enemy(i2);
                 i2 = i2+1;
             }
-            if (a.check_if_colliding(this.top_edge, collider))
-                this.remove_bullet(i1);
+            // if (a.check_if_colliding(this.top_edge, collider))
+            //     this.remove_bullet(i1);
             i1 = i1+1;
         }
     }
@@ -362,19 +367,6 @@ export class CatInvaders extends Base_Scene {
 
             this.draw_enemy(context, program_state);
 
-            // for (let i = 0; i < this.enemies.length; i++) {
-            // //for (let i = 0; i < this.enemy_x.length; i++) {
-            //     // if the enemy is too far down, remove it
-            //     // if (this.enemy_y.at(i) <= 0)
-            //     // {
-            //     //     this.enemy_x.shift();
-            //     //     this.enemy_y.shift();
-            //     // }
-            //
-            //     // draw the bullets
-            //     let center = Mat4.identity();
-            //     center = this.draw_enemy(context, program_state, center, i);
-            // }
         }
         // if on transitioning screen, display next level
         else if (!this.stopped) {
