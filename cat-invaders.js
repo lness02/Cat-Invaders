@@ -7,7 +7,7 @@ const {
 } = tiny;
 
 // TODO: cat model goes here
-class Cat extends Shape {
+class Cube extends Shape {
     constructor() {
         super("position", "normal",);
         // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
@@ -22,6 +22,102 @@ class Cat extends Shape {
         // Arrange the vertices into a square shape in texture space too:
         this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+    }
+}
+class Dish extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
+            [-1, 1.5, 5], [-3, 1.5, 4], [-4, 1.5, 3], [-5, 1.5, 1], [-1, 0, 2], [-2, 0, 1],
+            [-1, 1.5, -5], [-3, 1.5, -4], [-4, 1.5, -3], [-5, 1.5, -1], [-1, 0, -2], [-2, 0, -1],
+            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0,0,0]
+        );
+        this.arrays.normal = Vector3.cast(
+            [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
+            [-1, 1.5, 5], [-3, 1.5, 4], -[4, 1.5, 3], [-5, 1.5, 1], [-1, 0, 2], [-2, 0, 1],
+            [-1, 1.5, -5], [-3, 1.5, -4], [-4, 1.5, -3], [-5, 1.5, -1], [-1, 0, -2], [-2, 0, -1],
+            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0, 0, 0]
+        );
+        this.indices.push(
+            6,0,4,
+            0,4,1,
+            4,1,5,
+            1,5,2,
+            5,2,3,
+            3,5,23,
+            3,23,21,
+            23,21,20,
+            23,20,22,
+            20,22,19,
+            22,19,18,
+            22,18,16,
+            18,12,16,
+            16,12,13,
+            16,13,17,
+            17,14,13,
+            14,17,15,
+            15,17,11,
+            15,11,9,
+            9,11,8,
+            11,8,10,
+            8,10,7,
+            7,10,6,
+            6,10,4,
+            10,4,24,
+            10,11,24,
+            11,17,24,
+            17,16,24,
+            16,22,24,
+            22,23,24,
+            23,5,24,
+            5,4,24
+        );
+    }
+}
+class Pyramid_Face extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1, 0, 0], [0, 0, -1], [0, 2, 0],
+            [0, 0, -1], [-1, 0, 0], [0, 2, 0],
+            [-1, 0, 0], [0, 0, 1], [0, 2, 0],
+            [0, 0, 1], [1, 0, 0], [0, 2, 0],
+            [0, 0, 1], [1, 0, 0], [0, 0, -1],
+            [-1, 0, 0], [0, 0, 1], [0, 0, -1],
+        );
+        this.arrays.normal = Vector3.cast(
+            [2, -2, 1], [2, -2, 1], [2, -2, 1],
+            [-2, -2, 1], [-2, -2, 1], [-2, -2, 1],
+            [-2, 2, 1], [-2, 2, 1], [-2, 2, 1],
+            [2, 2, 1], [2, 2, 1], [2, 2, 1],
+            [0, -1, 0],[0, -1, 0],[0, -1, 0],
+            [0, -1, 0],[0, -1, 0],[0, -1, 0],
+        );
+    }
+}
+class Trapizoid extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1.5, 0, 1], [1.25, 0.5, 0.75],
+            [-1.5, 0, 1], [-1.25, 0.5, 0.75],
+            [-1.5, 0, -1], [-1.25, 0.5, -0.75],
+            [1.5, 0, -1], [1.25, 0.5, -0.75]
+        );
+        this.arrays.normal = Vector3.cast(
+            [1.5, 0, 1], [1.25, 0.25, 0.75],
+            [-1.5, 0, 1], [-1.25, 0.25, 0.75],
+            [-1.5, 0, -1], [-1.25, 0.25, -0.75],
+            [1.5, 0, -1], [1.25, 0.25, -0.75]
+        );
+        this.indices.push(
+            0,1,3,  0,3,2,
+            3,2,4,  3,4,5,
+            4,5,7,  4,7,6,
+            6,7,0,  0,1,7,
+            1,3,7,  3,5,7
+        );
     }
 }
 
@@ -76,7 +172,10 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            'cat': new Cat(),
+            'cube': new Cube(),
+            'dish': new Dish(),
+            'pyramid': new Pyramid_Face(),
+            'trap': new Trapizoid(),
             'bullet': new Bullet(),
             'enemy': new Enemy(),
             'text': new Text_Line(35), // change text length here
@@ -236,6 +335,54 @@ export class CatInvaders extends Base_Scene {
         // return model_transform;
     }
 
+    draw_player(context, program_state, model_transform) {
+        // Window
+        let center_transform = model_transform.times(Mat4.scale(1,2,1));
+        this.shapes.cube.draw(context, program_state, center_transform,
+            this.materials.plastic.override({color:hex_color("#98d2f6")}));
+        // will add cat later
+
+        // Body
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,-1)).times(Mat4.scale(2,1.5,1)),
+            this.materials.plastic.override({color:hex_color("#9a9a9a")}));
+
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,1.5)).times(Mat4.scale(2,1.5,1.5)),
+            this.materials.plastic.override({color:hex_color("#767676")}));
+
+        this.shapes.trap.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,3))
+                .times(Mat4.rotation(Math.PI/2,1,0,0)),
+            this.materials.plastic.override({color:hex_color("#545454")}),
+        );
+
+        // Dish
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,-2)).times(Mat4.scale(0.5,0.5,0.5)),
+            this.materials.plastic.override({color:hex_color("#545454")}));
+
+        let dish_transform = model_transform.times(Mat4.translation(0,0,-2.5))
+            .times(Mat4.rotation(-Math.PI/2,1,0,0));
+        this.shapes.dish.draw(context, program_state, dish_transform,
+            this.materials.plastic.override({color:hex_color("#EDEADE")}));
+        this.shapes.pyramid.draw(context, program_state,
+            dish_transform.times(Mat4.translation(0,0.01,0)).times(Mat4.scale(1.5,2.25,1.5)),
+            this.materials.plastic.override({color:hex_color("#767676")}));
+
+        // wings
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.scale(2.5,0.25,0.5)),
+            this.materials.plastic.override({color:hex_color("#545454")}));
+
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(4.75,0,0)).times(Mat4.scale(2.5,0.5,1)),
+            this.materials.plastic.override({color:hex_color("#38386e")}));
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(-4.75,0,0,)).times(Mat4.scale(2.5,0.5,1)),
+            this.materials.plastic.override({color:hex_color("#38386e")}));
+    }
+
     add_bullet(position)
     {
         this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet_material, vec3(0.5, 0.5, 0.5))
@@ -326,7 +473,9 @@ export class CatInvaders extends Base_Scene {
             model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
 
             // draws the cat at current position
-            this.shapes.cat.draw(context, program_state, model_transform, this.materials.plastic.override({color: blue}));
+            this.draw_player(context, program_state, model_transform
+                .times(Mat4.scale(0.5,0.5,0.5))
+                .times(Mat4.rotation(Math.PI/2,1,0,0)));
 
             // if "s" has been pressed, spawn a new bullet
             if (this.shot) {
