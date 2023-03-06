@@ -226,7 +226,6 @@ class Base_Scene extends Scene {
         this.enemy_velocity = vec3(0, -0.5, 0);
 
         this.stopped = true;
-        // this.mainscreen = true;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -243,6 +242,7 @@ class Base_Scene extends Scene {
         this.level_time = 999;
         this.transition_time = 99;
         this.gameover = false;
+        this.enemies_to_kill = 1;
 
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
@@ -408,6 +408,7 @@ export class CatInvaders extends Base_Scene {
                     this.remove_bullet(this.bullets.indexOf(a));
                     this.remove_enemy(this.enemies.indexOf(b));
                     this.score = this.score+1;
+                    this.enemies_to_kill = this.enemies_to_kill - 1;
                 }
 
                 // if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
@@ -424,11 +425,11 @@ export class CatInvaders extends Base_Scene {
 
     check_gameover() {
         for (let b of this.enemies) {
-            if (b.drawn_location[1][3] < this.bottom_of_screen - 4) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen + 2) {
                 this.remove_enemy(this.enemies.indexOf(b));
                 // TODO LOSE CONDITION
                 this.gameover = true;
-                console.log("gameover");
+                // console.log("gameover");
             }
         }
     }
@@ -443,10 +444,9 @@ export class CatInvaders extends Base_Scene {
         this.shot = false;
 
         this.stopped = true;
-        // this.mainscreen = true;
 
         // TODO consider using something else for timing
-        this.counter = 0;
+        // this.counter = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -460,6 +460,7 @@ export class CatInvaders extends Base_Scene {
         this.level_time = 999;
         this.transition_time = 99;
         this.gameover = false;
+        this.enemies_to_kill = 1;
     }
     update_state()
     {
@@ -482,8 +483,9 @@ export class CatInvaders extends Base_Scene {
 
         // at a certain point in time, increase difficulty
         // TODO consider changing time or make it based on score
-        if (this.counter%this.level_time == 0 ) {
+        if (!this.enemies_to_kill) {
             this.level = this.level + 1;
+            this.enemies_to_kill = this.level;
             this.transition = true;
         }
 
@@ -493,27 +495,47 @@ export class CatInvaders extends Base_Scene {
         if (!this.stopped || this.transition)
             this.counter = this.counter + 1;
 
-        // if (this.gameover) {
-        //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-        //     let gameover_string = "Game Over! Main Menu in 15 s...";
-        //     this.shapes.text.set_string(gameover_string, context.context);
-        //     this.shapes.text.draw(context, program_state, center, this.text_image);
-        //     // let time_lag = time + 5.0;
-        //     // console.log(time);
-        //     // // console.log(time_lag);
-        //     // const counter_lag = this.counter + 5;
-        //     // console.log(this.counter);
-        //     // console.log(this.counter_lag)
-        //
-        //     // this.transition = false;
-        //     // if ((this.counter-this.transition_time)%this.level_time == 0)
-        //     // {
-        //     //     this.reset_game();
-        //     // }
-        //     this.reset_game();
-        // }
+        if (this.gameover) {
+            let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let gameover_string = "Game Over! Main Menu in 15 s...";
+            this.shapes.text.set_string(gameover_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+            // let time_lag = time + 5.0;
+            // console.log(time);
+            // // console.log(time_lag);
+            // const counter_lag = this.counter + 5;
+            // console.log(this.counter);
+            // console.log(this.counter_lag)
+
+            // this.transition = false;
+            if ((this.counter-this.transition_time)%this.level_time == 0)
+            {
+                this.reset_game();
+            }
+            // this.reset_game();
+        }
+        // displaying "press space" message when paused
+        else if (this.stopped){
+            // note: 3 in the z coordinate so that text shows up *on top* of any other items
+            let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Press space to start or continue.";
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+        }
+        // if on transitioning screen, display next level
+        else if (this.transition) {
+            let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Next Level: " + this.level;
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+            // after some time, return to normal gameplay
+            if ((this.counter-this.transition_time)%this.level_time == 0)
+            {
+                this.transition = false;
+            }
+        }
         // normal game play if not transitioning to next level
-        if (!this.transition && !this.stopped) {
+        else {
 
             model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
 
@@ -546,48 +568,16 @@ export class CatInvaders extends Base_Scene {
                 }
 
             this.draw_enemy(context, program_state);
-
-            // // gameover
-            // if (this.gameover) {
-            //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            //     let gameover_string = "Game Over! Returning to Main Menu in 5 s...";
-            //     this.shapes.text.set_string(gameover_string, context.context);
-            //     this.shapes.text.draw(context, program_state, center, this.text_image);
-            //
-            //     // sleep(1);
-            //     let time_lag = time + 100;
-            //
-            //     // after some time, return to normal gameplay
-            //     if (time === time_lag)
-            //     {
-            //         // this.transition = false;
-            //         this.reset_game();
-            //     }
-            //
-            //
-            // }
-        }
-        // if on transitioning screen, display next level
-        else if (!this.stopped) {
-            let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Next Level: " + this.level;
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-            // after some time, return to normal gameplay
-            if ((this.counter-this.transition_time)%this.level_time == 0)
-            {
-                this.transition = false;
-            }
         }
 
-        // displaying "press space" message when paused
-        if (this.stopped){
-            // note: 3 in the z coordinate so that text shows up *on top* of any other items
-            let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Press space to start or continue.";
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-        }
+        // // displaying "press space" message when paused
+        // if (this.stopped){
+        //     // note: 3 in the z coordinate so that text shows up *on top* of any other items
+        //     let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+        //     let start_string = "Press space to start or continue.";
+        //     this.shapes.text.set_string(start_string, context.context);
+        //     this.shapes.text.draw(context, program_state, center, this.text_image);
+        // }
         // displaying score
         let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
         let score_string = "Score: " + this.score;
