@@ -6,8 +6,9 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
+
 // TODO: cat model goes here
-class Cat extends Shape {
+class Cube extends Shape {
     constructor() {
         super("position", "normal",);
         // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
@@ -22,6 +23,102 @@ class Cat extends Shape {
         // Arrange the vertices into a square shape in texture space too:
         this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+    }
+}
+class Dish extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
+            [-1, 1.5, 5], [-3, 1.5, 4], [-4, 1.5, 3], [-5, 1.5, 1], [-1, 0, 2], [-2, 0, 1],
+            [-1, 1.5, -5], [-3, 1.5, -4], [-4, 1.5, -3], [-5, 1.5, -1], [-1, 0, -2], [-2, 0, -1],
+            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0,0,0]
+        );
+        this.arrays.normal = Vector3.cast(
+            [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
+            [-1, 1.5, 5], [-3, 1.5, 4], -[4, 1.5, 3], [-5, 1.5, 1], [-1, 0, 2], [-2, 0, 1],
+            [-1, 1.5, -5], [-3, 1.5, -4], [-4, 1.5, -3], [-5, 1.5, -1], [-1, 0, -2], [-2, 0, -1],
+            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0, 0, 0]
+        );
+        this.indices.push(
+            6,0,4,
+            0,4,1,
+            4,1,5,
+            1,5,2,
+            5,2,3,
+            3,5,23,
+            3,23,21,
+            23,21,20,
+            23,20,22,
+            20,22,19,
+            22,19,18,
+            22,18,16,
+            18,12,16,
+            16,12,13,
+            16,13,17,
+            17,14,13,
+            14,17,15,
+            15,17,11,
+            15,11,9,
+            9,11,8,
+            11,8,10,
+            8,10,7,
+            7,10,6,
+            6,10,4,
+            10,4,24,
+            10,11,24,
+            11,17,24,
+            17,16,24,
+            16,22,24,
+            22,23,24,
+            23,5,24,
+            5,4,24
+        );
+    }
+}
+class Pyramid_Face extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1, 0, 0], [0, 0, -1], [0, 2, 0],
+            [0, 0, -1], [-1, 0, 0], [0, 2, 0],
+            [-1, 0, 0], [0, 0, 1], [0, 2, 0],
+            [0, 0, 1], [1, 0, 0], [0, 2, 0],
+            [0, 0, 1], [1, 0, 0], [0, 0, -1],
+            [-1, 0, 0], [0, 0, 1], [0, 0, -1],
+        );
+        this.arrays.normal = Vector3.cast(
+            [2, -2, 1], [2, -2, 1], [2, -2, 1],
+            [-2, -2, 1], [-2, -2, 1], [-2, -2, 1],
+            [-2, 2, 1], [-2, 2, 1], [-2, 2, 1],
+            [2, 2, 1], [2, 2, 1], [2, 2, 1],
+            [0, -1, 0],[0, -1, 0],[0, -1, 0],
+            [0, -1, 0],[0, -1, 0],[0, -1, 0],
+        );
+    }
+}
+class Trapizoid extends Shape {
+    constructor() {
+        super("position", "normal");
+        this.arrays.position = Vector3.cast(
+            [1.5, 0, 1], [1.25, 0.5, 0.75],
+            [-1.5, 0, 1], [-1.25, 0.5, 0.75],
+            [-1.5, 0, -1], [-1.25, 0.5, -0.75],
+            [1.5, 0, -1], [1.25, 0.5, -0.75]
+        );
+        this.arrays.normal = Vector3.cast(
+            [1.5, 0, 1], [1.25, 0.25, 0.75],
+            [-1.5, 0, 1], [-1.25, 0.25, 0.75],
+            [-1.5, 0, -1], [-1.25, 0.25, -0.75],
+            [1.5, 0, -1], [1.25, 0.25, -0.75]
+        );
+        this.indices.push(
+            0,1,3,  0,3,2,
+            3,2,4,  3,4,5,
+            4,5,7,  4,7,6,
+            6,7,0,  0,1,7,
+            1,3,7,  3,5,7
+        );
     }
 }
 
@@ -76,7 +173,10 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            'cat': new Cat(),
+            'cube': new Cube(),
+            'dish': new Dish(),
+            'pyramid': new Pyramid_Face(),
+            'trap': new Trapizoid(),
             'bullet': new Bullet(),
             'enemy': new Enemy(),
             'text': new Text_Line(35), // change text length here
@@ -87,13 +187,25 @@ class Base_Scene extends Scene {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
             bullet_material: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("FF0000")}),
+                {ambient: .4, diffusivity: .6, color: hex_color("#FFffff")}),
+            enemy_material: new Material(new defs.Phong_Shader(),
+                {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")})
         };
+
+        // Make simpler dummy shapes for representing all other shapes during collisions:
+        this.colliders = [
+            {intersect_test: Body.intersect_sphere, points: new defs.Subdivision_Sphere(1), leeway: .5},
+            {intersect_test: Body.intersect_sphere, points: new defs.Subdivision_Sphere(2), leeway: .3},
+            {intersect_test: Body.intersect_cube, points: new defs.Cube(), leeway: .1}
+        ];
+        // change this to switch to a different dummy shape
+        this.collider_selection = 0;
 
         // for easy changing
         this.top_of_screen = 20;
         this.bottom_of_screen = 0;
         this.enemy_spawn_time = 90;
+
 
         // position of cat
         this.position = 0;
@@ -102,17 +214,24 @@ class Base_Scene extends Scene {
         this.shot = false;
 
         // locations of current bullets
-        this.bullet_x = [];
-        this.bullet_y = [];
+        // this.bullet_x = [];
+        // this.bullet_y = [];
+        this.bullets = [];
+        this.bullet_velocity = vec3(0, 1, 0);
 
         // locations of current enemies
-        this.enemy_x = [];
-        this.enemy_y = [];
+        // this.enemy_x = [];
+        // this.enemy_y = [];
+        this.enemies = [];
+        this.enemy_velocity = vec3(0, -0.5, 0);
 
         this.stopped = true;
+        // this.mainscreen = true;
 
         // TODO consider using something else for timing
         this.counter = 0;
+        this.transition_counter = 0;
+        this.bullet_counter = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -121,10 +240,12 @@ class Base_Scene extends Scene {
         this.score = 0;
 
         // level variables
-        this.level = 0;
+        this.level = 1;
         this.transition = false; // for transition screen ("Next level: x")
-        this.level_time = 999;
-        this.transition_time = 99;
+        this.gameover = false;
+        this.threshold = 14; // # of enemies to be killed before next level
+
+        this.bullet_cooldown = 10;
 
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
@@ -163,20 +284,26 @@ export class CatInvaders extends Base_Scene {
 
     make_control_panel() {
         this.key_triggered_button("Left", ['a'], () => {
-            if (!this.stopped)
+            if (!this.stopped && this.position > -20)
                 this.position = this.position - 1;
         });
         this.key_triggered_button("Right", ['d'], () => {
-            if (!this.stopped)
+            if (!this.stopped && this.position < 20)
                 this.position = this.position + 1;
         });
         this.key_triggered_button("Shoot", ['s'], () => {
-            if (!this.stopped)
+            if (!this.stopped && this.bullet_counter == this.bullet_cooldown) {
                 this.shot = true;
+                this.bullet_counter = 0;
+            }
         });
         this.key_triggered_button("Pause/Unpause", [' '], () =>{
             this.stopped = !this.stopped;
         });
+
+        // this.key_triggered_button("Main Screen", ['m'], () =>{
+        //     this.mainscreen = !this.mainscreen;
+        // });
 
         this.new_line();
         // TODO for testing purposes
@@ -185,114 +312,282 @@ export class CatInvaders extends Base_Scene {
         });
     }
 
-    draw_bullet(context, program_state, model_transform, index) {
-        model_transform = model_transform.times(Mat4.translation(this.bullet_x.at(index), this.bullet_y.at(index), 0));
-        model_transform = model_transform.times(Mat4.scale(0.5, 0.5, 0.5)); // TODO maybe delete later, just for shrinking-cube purposes
-        this.shapes.bullet.draw(context, program_state, model_transform, this.materials.plastic);
-        if (!this.stopped)
-            this.bullet_y[index] = this.bullet_y.at(index) + 1;
-        return model_transform;
+    draw_bullet(context, program_state) {
+        for (let b of this.bullets) {
+            this.shapes.bullet.draw(context, program_state, b.drawn_location.times(Mat4.scale(0.5, 0.5, 0.5)), this.materials.bullet_material);
+        }
     }
 
-    draw_enemy(context, program_state, model_transform, index)
+    draw_enemy(context, program_state)
     {
-        model_transform = model_transform.times(Mat4.translation(this.enemy_x.at(index), this.enemy_y.at(index), 0));
-        this.shapes.enemy.draw(context, program_state, model_transform, this.materials.bullet_material);
-        if (!this.stopped & (this.counter%(this.enemy_spawn_time / 3))==0) // moves 3x as fast as spawning rate
-            this.enemy_y[index] = this.enemy_y.at(index) - 1;
-        return model_transform;
+        for (let b of this.enemies) {
+            this.shapes.enemy.draw(context, program_state, b.drawn_location, this.materials.enemy_material);
+        }
+    }
+
+
+    draw_player(context, program_state, model_transform) {
+        // Window
+        let center_transform = model_transform.times(Mat4.scale(1,2,1));
+        this.shapes.cube.draw(context, program_state, center_transform,
+            this.materials.plastic.override({color:hex_color("#98d2f6")}));
+        // will add cat later
+
+        // Body
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,-1)).times(Mat4.scale(2,1.5,1)),
+            this.materials.plastic.override({color:hex_color("#9a9a9a")}));
+
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,1.5)).times(Mat4.scale(2,1.5,1.5)),
+            this.materials.plastic.override({color:hex_color("#767676")}));
+
+        this.shapes.trap.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,3))
+                .times(Mat4.rotation(Math.PI/2,1,0,0)),
+            this.materials.plastic.override({color:hex_color("#545454")}),
+        );
+
+        // Dish
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0,0,-2)).times(Mat4.scale(0.5,0.5,0.5)),
+            this.materials.plastic.override({color:hex_color("#545454")}));
+
+        let dish_transform = model_transform.times(Mat4.translation(0,0,-2.5))
+            .times(Mat4.rotation(-Math.PI/2,1,0,0));
+        this.shapes.dish.draw(context, program_state, dish_transform,
+            this.materials.plastic.override({color:hex_color("#EDEADE")}));
+        this.shapes.pyramid.draw(context, program_state,
+            dish_transform.times(Mat4.translation(0,0.01,0)).times(Mat4.scale(1.5,2.25,1.5)),
+            this.materials.plastic.override({color:hex_color("#767676")}));
+
+        // wings
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.scale(2.5,0.25,0.5)),
+            this.materials.plastic.override({color:hex_color("#545454")}));
+
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(4.75,0,0)).times(Mat4.scale(2.5,0.5,1)),
+            this.materials.plastic.override({color:hex_color("#38386e")}));
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(-4.75,0,0,)).times(Mat4.scale(2.5,0.5,1)),
+            this.materials.plastic.override({color:hex_color("#38386e")}));
+    }
+
+    add_bullet(position)
+    {
+        this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet_material, vec3(0.5, 0.5, 0.5))
+            .emplace(Mat4.translation(position, this.bottom_of_screen, 0), this.bullet_velocity, 0));
+        let a = this.bullets.at(this.bullets.length-1);
+        a.inverse = Mat4.inverse(a.drawn_location);
+    }
+
+    add_enemy(position)
+    {
+        this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
+            .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0));
+        let a = this.enemies.at(this.enemies.length-1);
+            a.inverse = Mat4.inverse(a.drawn_location);
+    }
+
+    remove_bullet(index)
+    {
+        if (index < this.bullets.length)
+            this.bullets.splice(index, 1);
+    }
+    remove_enemy(index)
+    {
+        if (index < this.enemies.length)
+            this.enemies.splice(index, 1);
+    }
+    check_collisions()
+    {
+        const collider = this.colliders[this.collider_selection];
+        for (let a of this.bullets)
+        {
+            for (let b of this.enemies)
+            {
+                // if bullet has collided with enemy
+                if (a.check_if_colliding(b, collider))
+                {
+                    this.remove_bullet(this.bullets.indexOf(a));
+                    this.remove_enemy(this.enemies.indexOf(b));
+                    this.score = this.score+1;
+                }
+
+                // if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
+                //     this.remove_enemy(this.enemies.indexOf(b));
+                //     // TODO LOSE CONDITION
+                //     this.gameover = true;
+                //     console.log("gameover");
+                // }
+            }
+            if (a.drawn_location[1][3] > this.top_of_screen+2)
+                this.remove_bullet(this.bullets.indexOf(a));
+        }
+    }
+
+    check_gameover() {
+        for (let b of this.enemies) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen - 4) {
+                this.remove_enemy(this.enemies.indexOf(b));
+                // TODO LOSE CONDITION
+                this.gameover = true;
+                console.log("gameover");
+            }
+        }
+    }
+
+    // for game over/reset game
+    // reset all vals
+    reset_game() {
+        // position of cat
+        this.position = 0;
+
+        // for spawning new bullets
+        this.shot = false;
+
+        this.stopped = true;
+        // this.mainscreen = true;
+
+        // TODO consider using something else for timing
+        this.counter = 0;
+        this.transition_counter = 0;
+
+        // TODO for testing purposes
+        this.spawn = false;
+
+        // for keeping track of score
+        this.score = 0;
+
+        // level variables
+        this.level = 1;
+        this.transition = false; // for transition screen ("Next level: x")
+        this.gameover = false;
+
+        // clean up previous enemies & bullets
+        for (let i = this.enemies.length-1; i>=0; i--)
+        {
+            this.remove_enemy(i);
+        }
+        for (let i = this.bullets.length-1; i>=0; i--)
+        {
+            this.remove_bullet(i);
+        }
+    }
+
+    update_state()
+    {
+        for (let a of this.bullets)
+        {
+            a.drawn_location = a.drawn_location.times(Mat4.translation(0, 1, 0));
+            a.inverse = Mat4.inverse(a.drawn_location);
+        }
+        for (let b of this.enemies) {
+            b.drawn_location = b.drawn_location.times(Mat4.translation(0, -1 / 10, 0));
+            b.inverse = Mat4.inverse(b.drawn_location);
+        }
+    }
+
+    cooling_bullet()
+    {
+        if (this.bullet_counter != this.bullet_cooldown)
+        {
+            this.bullet_counter = this.bullet_counter + 1;
+        }
     }
 
     display(context, program_state) {
         super.display(context, program_state);
-        const blue = hex_color("#1a9ffa");
         let model_transform = Mat4.identity();
-        let time = program_state.animation_time / 1000;
 
-        // at a certain point in time, increase difficulty
-        // TODO consider changing time or make it based on score
-        if (this.counter%this.level_time == 0 ) {
+
+        // increase by 1 level and start transition
+        // if transition has not already started, score is a multiple of some number,
+        // and the score has not already been incremented (preventing infinite loop)
+        if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
+        {
             this.level = this.level + 1;
             this.transition = true;
+            this.counter = 0;
         }
 
-        // TODO consider making a separate counter for transitions
-        // (potentially problems with spawning being offset)
-        // other potential solution: reset counter to 0 when new level starts
-        if (!this.stopped || this.transition)
+        // if transitioning, increment the transition counter
+        // otherwise increment the normal counter
+        // CANNOT PAUSE ON TRANSITION OR GAME OVER
+        if (this.transition || this.gameover)
+        {
+            this.transition_counter = this.transition_counter + 1;
+        }
+        else if (!this.stopped)
+        {
             this.counter = this.counter + 1;
+        }
 
-        // normal game play if not transitioning to next level
-        if (!this.transition) {
-
-            model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
-
-            // draws the cat at current position
-            this.shapes.cat.draw(context, program_state, model_transform, this.materials.plastic.override({color: blue}));
-
-            // if "s" has been pressed, spawn a new bullet
-            if (this.shot) {
-                this.shot = false;
-                this.bullet_x.push(this.position);
-                this.bullet_y.push(0);
-            }
-
-            for (let i = 0; i < this.bullet_x.length; i++) {
-                // if the bullet is too far up, remove it
-                if (this.bullet_y.at(i) > this.top_of_screen * 1.5)
-                {
-                    this.bullet_x.shift();
-                    this.bullet_y.shift();
-                }
-
-                // draw the bullets
-                let center = Mat4.identity();
-                center = this.draw_bullet(context, program_state, center, i);
-            }
-
-            // spawning for test purposes
-            if (this.spawn)
-                if ((this.counter % this.enemy_spawn_time) == 0) {
-                    // spawn enemies in a row
-                    for (let i = -5; i < 6; i++) {
-                        this.enemy_x.push(i * 3);
-                        this.enemy_y.push(this.top_of_screen);
-                    }
-                }
-
-            for (let i = 0; i < this.enemy_x.length; i++) {
-                // if the enemy is too far down, remove it
-                if (this.enemy_y.at(i) <= 0)
-                {
-                    this.enemy_x.shift();
-                    this.enemy_y.shift();
-                }
-
-                // draw the bullets
-                let center = Mat4.identity();
-                center = this.draw_enemy(context, program_state, center, i);
-            }
-            // displaying "press space" message when paused
-            if (this.stopped){
+        // If either normal gameplay or paused
+        // display the blocks in the back
+        // if normal gameplay, also do all the updates
+        if (!this.transition && !this.gameover)
+        {
+            // move blocks & stuff
+            if (this.stopped)
+            {
                 // note: 3 in the z coordinate so that text shows up *on top* of any other items
                 let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
                 let start_string = "Press space to start or continue.";
                 this.shapes.text.set_string(start_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
             }
+            else
+            {
+                if (this.shot) {
+                    this.shot = false;
+                    this.add_bullet(this.position);
+                }
+                if (this.spawn)
+                    if ((this.counter % this.enemy_spawn_time) == 0) {
+                        // spawn enemies in a row
+                        for (let i = -9; i < 10; i+=3) {
+                            this.add_enemy(i);
+                        }
+                    }
+                this.update_state();
+                this.check_collisions();
+                this.check_gameover();
+                this.cooling_bullet();
+            }
+            model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
+            this.draw_player(context, program_state, model_transform
+                .times(Mat4.scale(0.5,0.5,0.5))
+                .times(Mat4.rotation(Math.PI/2,1,0,0)));
+            this.draw_bullet(context, program_state);
+            this.draw_enemy(context, program_state);
         }
-        // if on transitioning screen, display next level
-        else {
+        else if (this.transition)
+        {
             let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
             let start_string = "Next Level: " + this.level;
             this.shapes.text.set_string(start_string, context.context);
             this.shapes.text.draw(context, program_state, center, this.text_image);
             // after some time, return to normal gameplay
-            if ((this.counter-this.transition_time)%this.level_time == 0)
+            if (this.transition_counter == 200)
             {
                 this.transition = false;
+                this.transition_counter = 0;
             }
         }
+        else if (this.gameover)
+        {
+            let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let gameover_string = "Game Over! Main Menu in a few s...";
+            this.shapes.text.set_string(gameover_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+            if (this.transition_counter == 200) {
+                this.reset_game();
+                this.transition_counter = 0;
+            }
+        }
+
         // displaying score
         let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
         let score_string = "Score: " + this.score;
@@ -301,7 +596,7 @@ export class CatInvaders extends Base_Scene {
 
         // displaying current level
         let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let lvl_string = "Level: " + this.level;
+        let lvl_string = "Level: " + this.level; // + " # of bullets: " + this.bullets.length; // TODO remove testing
         this.shapes.text.set_string(lvl_string, context.context);
         this.shapes.text.draw(context, program_state, middle, this.text_image);
 
