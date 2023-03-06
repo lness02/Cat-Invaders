@@ -230,6 +230,8 @@ class Base_Scene extends Scene {
 
         // TODO consider using something else for timing
         this.counter = 0;
+        this.transition_counter = 0;
+        this.bullet_counter = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -238,11 +240,12 @@ class Base_Scene extends Scene {
         this.score = 0;
 
         // level variables
-        this.level = 0;
+        this.level = 1;
         this.transition = false; // for transition screen ("Next level: x")
-        this.level_time = 999;
-        this.transition_time = 99;
         this.gameover = false;
+        this.threshold = 14; // # of enemies to be killed before next level
+
+        this.bullet_cooldown = 10;
 
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
@@ -289,8 +292,10 @@ export class CatInvaders extends Base_Scene {
                 this.position = this.position + 1;
         });
         this.key_triggered_button("Shoot", ['s'], () => {
-            if (!this.stopped)
+            if (!this.stopped && this.bullet_counter == this.bullet_cooldown) {
                 this.shot = true;
+                this.bullet_counter = 0;
+            }
         });
         this.key_triggered_button("Pause/Unpause", [' '], () =>{
             this.stopped = !this.stopped;
@@ -447,6 +452,7 @@ export class CatInvaders extends Base_Scene {
 
         // TODO consider using something else for timing
         this.counter = 0;
+        this.transition_counter = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -455,12 +461,21 @@ export class CatInvaders extends Base_Scene {
         this.score = 0;
 
         // level variables
-        this.level = 0;
+        this.level = 1;
         this.transition = false; // for transition screen ("Next level: x")
-        this.level_time = 999;
-        this.transition_time = 99;
         this.gameover = false;
+
+        // clean up previous enemies & bullets
+        for (let i = this.enemies.length-1; i>=0; i--)
+        {
+            this.remove_enemy(i);
+        }
+        for (let i = this.bullets.length-1; i>=0; i--)
+        {
+            this.remove_bullet(i);
+        }
     }
+
     update_state()
     {
         for (let a of this.bullets)
@@ -474,120 +489,105 @@ export class CatInvaders extends Base_Scene {
         }
     }
 
+    cooling_bullet()
+    {
+        if (this.bullet_counter != this.bullet_cooldown)
+        {
+            this.bullet_counter = this.bullet_counter + 1;
+        }
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
-        const blue = hex_color("#1a9ffa");
         let model_transform = Mat4.identity();
-        let time = program_state.animation_time / 1000;
 
-        // at a certain point in time, increase difficulty
-        // TODO consider changing time or make it based on score
-        if (this.counter%this.level_time == 0 ) {
+
+        // increase by 1 level and start transition
+        // if transition has not already started, score is a multiple of some number,
+        // and the score has not already been incremented (preventing infinite loop)
+        if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
+        {
             this.level = this.level + 1;
             this.transition = true;
+            this.counter = 0;
         }
 
-        // TODO consider making a separate counter for transitions
-        // (potentially problems with spawning being offset)
-        // other potential solution: reset counter to 0 when new level starts
-        if (!this.stopped || this.transition)
+        // if transitioning, increment the transition counter
+        // otherwise increment the normal counter
+        // CANNOT PAUSE ON TRANSITION OR GAME OVER
+        if (this.transition || this.gameover)
+        {
+            this.transition_counter = this.transition_counter + 1;
+        }
+        else if (!this.stopped)
+        {
             this.counter = this.counter + 1;
+        }
 
-        // if (this.gameover) {
-        //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-        //     let gameover_string = "Game Over! Main Menu in 15 s...";
-        //     this.shapes.text.set_string(gameover_string, context.context);
-        //     this.shapes.text.draw(context, program_state, center, this.text_image);
-        //     // let time_lag = time + 5.0;
-        //     // console.log(time);
-        //     // // console.log(time_lag);
-        //     // const counter_lag = this.counter + 5;
-        //     // console.log(this.counter);
-        //     // console.log(this.counter_lag)
-        //
-        //     // this.transition = false;
-        //     // if ((this.counter-this.transition_time)%this.level_time == 0)
-        //     // {
-        //     //     this.reset_game();
-        //     // }
-        //     this.reset_game();
-        // }
-        // normal game play if not transitioning to next level
-        if (!this.transition && !this.stopped) {
-
+        // If either normal gameplay or paused
+        // display the blocks in the back
+        // if normal gameplay, also do all the updates
+        if (!this.transition && !this.gameover)
+        {
+            // move blocks & stuff
+            if (this.stopped)
+            {
+                // note: 3 in the z coordinate so that text shows up *on top* of any other items
+                let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let start_string = "Press space to start or continue.";
+                this.shapes.text.set_string(start_string, context.context);
+                this.shapes.text.draw(context, program_state, center, this.text_image);
+            }
+            else
+            {
+                if (this.shot) {
+                    this.shot = false;
+                    this.add_bullet(this.position);
+                }
+                if (this.spawn)
+                    if ((this.counter % this.enemy_spawn_time) == 0) {
+                        // spawn enemies in a row
+                        for (let i = -9; i < 10; i+=3) {
+                            this.add_enemy(i);
+                        }
+                    }
+                this.update_state();
+                this.check_collisions();
+                this.check_gameover();
+                this.cooling_bullet();
+            }
             model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
-
-            // draws the cat at current position
             this.draw_player(context, program_state, model_transform
                 .times(Mat4.scale(0.5,0.5,0.5))
                 .times(Mat4.rotation(Math.PI/2,1,0,0)));
-
-
-            // if "s" has been pressed, spawn a new bullet
-            if (this.shot) {
-                this.shot = false;
-                this.add_bullet(this.position);
-            }
-
-
-            this.update_state();
-            this.check_collisions();
-            this.check_gameover()
-
             this.draw_bullet(context, program_state);
-
-            // spawning for test purposes
-            if (this.spawn)
-                if ((this.counter % this.enemy_spawn_time) == 0) {
-                    // spawn enemies in a row
-                    for (let i = -9; i < 10; i+=3) {
-                        this.add_enemy(i);
-                    }
-                }
-
             this.draw_enemy(context, program_state);
-
-            // // gameover
-            // if (this.gameover) {
-            //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            //     let gameover_string = "Game Over! Returning to Main Menu in 5 s...";
-            //     this.shapes.text.set_string(gameover_string, context.context);
-            //     this.shapes.text.draw(context, program_state, center, this.text_image);
-            //
-            //     // sleep(1);
-            //     let time_lag = time + 100;
-            //
-            //     // after some time, return to normal gameplay
-            //     if (time === time_lag)
-            //     {
-            //         // this.transition = false;
-            //         this.reset_game();
-            //     }
-            //
-            //
-            // }
         }
-        // if on transitioning screen, display next level
-        else if (!this.stopped) {
+        else if (this.transition)
+        {
             let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
             let start_string = "Next Level: " + this.level;
             this.shapes.text.set_string(start_string, context.context);
             this.shapes.text.draw(context, program_state, center, this.text_image);
             // after some time, return to normal gameplay
-            if ((this.counter-this.transition_time)%this.level_time == 0)
+            if (this.transition_counter == 200)
             {
                 this.transition = false;
+                this.transition_counter = 0;
+            }
+        }
+        else if (this.gameover)
+        {
+            let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let gameover_string = "Game Over! Main Menu in a few s...";
+            this.shapes.text.set_string(gameover_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
+            if (this.transition_counter == 200) {
+                this.reset_game();
+                this.transition_counter = 0;
             }
         }
 
-        // displaying "press space" message when paused
-        if (this.stopped){
-            // note: 3 in the z coordinate so that text shows up *on top* of any other items
-            let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Press space to start or continue.";
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-        }
         // displaying score
         let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
         let score_string = "Score: " + this.score;
