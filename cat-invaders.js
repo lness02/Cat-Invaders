@@ -226,6 +226,7 @@ class Base_Scene extends Scene {
         this.enemy_velocity = vec3(0, -0.5, 0);
 
         this.stopped = true;
+        // this.mainscreen = true;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -241,6 +242,7 @@ class Base_Scene extends Scene {
         this.transition = false; // for transition screen ("Next level: x")
         this.level_time = 999;
         this.transition_time = 99;
+        this.gameover = false;
 
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
@@ -293,6 +295,10 @@ export class CatInvaders extends Base_Scene {
         this.key_triggered_button("Pause/Unpause", [' '], () =>{
             this.stopped = !this.stopped;
         });
+
+        // this.key_triggered_button("Main Screen", ['m'], () =>{
+        //     this.mainscreen = !this.mainscreen;
+        // });
 
         this.new_line();
         // TODO for testing purposes
@@ -404,16 +410,57 @@ export class CatInvaders extends Base_Scene {
                     this.score = this.score+1;
                 }
 
-                if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
-                    this.remove_enemy(this.enemies.indexOf(b));
-                    // TODO LOSE CONDITION
-                }
+                // if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
+                //     this.remove_enemy(this.enemies.indexOf(b));
+                //     // TODO LOSE CONDITION
+                //     this.gameover = true;
+                //     console.log("gameover");
+                // }
             }
             if (a.drawn_location[1][3] > this.top_of_screen+2)
                 this.remove_bullet(this.bullets.indexOf(a));
         }
     }
 
+    check_gameover() {
+        for (let b of this.enemies) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen - 4) {
+                this.remove_enemy(this.enemies.indexOf(b));
+                // TODO LOSE CONDITION
+                this.gameover = true;
+                console.log("gameover");
+            }
+        }
+    }
+
+    // for game over/reset game
+    // reset all vals
+    reset_game() {
+        // position of cat
+        this.position = 0;
+
+        // for spawning new bullets
+        this.shot = false;
+
+        this.stopped = true;
+        // this.mainscreen = true;
+
+        // TODO consider using something else for timing
+        this.counter = 0;
+
+        // TODO for testing purposes
+        this.spawn = false;
+
+        // for keeping track of score
+        this.score = 0;
+
+        // level variables
+        this.level = 0;
+        this.transition = false; // for transition screen ("Next level: x")
+        this.level_time = 999;
+        this.transition_time = 99;
+        this.gameover = false;
+    }
     update_state()
     {
         for (let a of this.bullets)
@@ -446,6 +493,25 @@ export class CatInvaders extends Base_Scene {
         if (!this.stopped || this.transition)
             this.counter = this.counter + 1;
 
+        // if (this.gameover) {
+        //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+        //     let gameover_string = "Game Over! Main Menu in 15 s...";
+        //     this.shapes.text.set_string(gameover_string, context.context);
+        //     this.shapes.text.draw(context, program_state, center, this.text_image);
+        //     // let time_lag = time + 5.0;
+        //     // console.log(time);
+        //     // // console.log(time_lag);
+        //     // const counter_lag = this.counter + 5;
+        //     // console.log(this.counter);
+        //     // console.log(this.counter_lag)
+        //
+        //     // this.transition = false;
+        //     // if ((this.counter-this.transition_time)%this.level_time == 0)
+        //     // {
+        //     //     this.reset_game();
+        //     // }
+        //     this.reset_game();
+        // }
         // normal game play if not transitioning to next level
         if (!this.transition && !this.stopped) {
 
@@ -466,6 +532,7 @@ export class CatInvaders extends Base_Scene {
 
             this.update_state();
             this.check_collisions();
+            this.check_gameover()
 
             this.draw_bullet(context, program_state);
 
@@ -480,6 +547,25 @@ export class CatInvaders extends Base_Scene {
 
             this.draw_enemy(context, program_state);
 
+            // // gameover
+            // if (this.gameover) {
+            //     let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            //     let gameover_string = "Game Over! Returning to Main Menu in 5 s...";
+            //     this.shapes.text.set_string(gameover_string, context.context);
+            //     this.shapes.text.draw(context, program_state, center, this.text_image);
+            //
+            //     // sleep(1);
+            //     let time_lag = time + 100;
+            //
+            //     // after some time, return to normal gameplay
+            //     if (time === time_lag)
+            //     {
+            //         // this.transition = false;
+            //         this.reset_game();
+            //     }
+            //
+            //
+            // }
         }
         // if on transitioning screen, display next level
         else if (!this.stopped) {
@@ -493,6 +579,7 @@ export class CatInvaders extends Base_Scene {
                 this.transition = false;
             }
         }
+
         // displaying "press space" message when paused
         if (this.stopped){
             // note: 3 in the z coordinate so that text shows up *on top* of any other items
