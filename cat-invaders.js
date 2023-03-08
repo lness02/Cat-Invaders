@@ -3,11 +3,9 @@ import {Text_Line} from './examples/text-demo.js'
 import {Body} from './examples/collisions-demo.js'
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture, Square,
 } = tiny;
 
-
-// TODO: cat model goes here
 class Cube extends Shape {
     constructor() {
         super("position", "normal",);
@@ -251,6 +249,7 @@ class Base_Scene extends Scene {
         this.wave_num = 3; // # of "waves" to spawn in each level
 
         this.bullet_cooldown = 10;
+        this.top_scores = [];
 
         // To show text you need a Material like this one:
         const texture = new defs.Textured_Phong(1);
@@ -625,10 +624,38 @@ export class CatInvaders extends Base_Scene {
         }
         else if (this.gameover)
         {
-            let center = Mat4.identity().times(Mat4.translation(-10, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let gameover_string = "Game Over! Main Menu in a few s...";
+            let center = Mat4.identity().times(Mat4.translation(-10, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let gameover_string = "Game Over! Main Menu in a few secs...";
             this.shapes.text.set_string(gameover_string, context.context);
             this.shapes.text.draw(context, program_state, center, this.text_image);
+
+            // add score to list of scores (once)
+            if (this.score != 0)
+            {
+                this.top_scores.push(this.score);
+                this.top_scores.sort();
+                this.score = 0;
+            }
+
+            // display top 10
+            center = center.times(Mat4.translation(0, -4, 0));
+            if (this.top_scores.length > 0) {
+                this.shapes.text.set_string("Top 10 scores: ", context.context);
+                this.shapes.text.draw(context, program_state, center, this.text_image);
+                center = center.times(Mat4.translation(0, -2, 0));
+                center = center.times(Mat4.scale(0.75, 0.75, 0.75));
+                for (let i = 1; i <= this.top_scores.length && i <= 10; i++) {
+                    center = center.times(Mat4.translation(0, -2, 0));
+                    let score_string = i + ". " + this.top_scores[i - 1];
+                    this.shapes.text.set_string(score_string, context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                }
+            }
+            else {
+                this.shapes.text.set_string("No top scores yet!", context.context);
+                this.shapes.text.draw(context, program_state, center, this.text_image);
+            }
+
             if (this.transition_counter == 200) {
                 this.reset_game();
                 this.transition_counter = 0;
