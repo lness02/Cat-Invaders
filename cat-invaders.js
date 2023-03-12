@@ -225,6 +225,7 @@ class Base_Scene extends Scene {
 
         this.stopped = true;
         // this.mainscreen = true;
+        this.gameStarted = false;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -303,6 +304,7 @@ export class CatInvaders extends Base_Scene {
         });
         this.key_triggered_button("Pause/Unpause", [' '], () =>{
             this.stopped = !this.stopped;
+            this.gameStarted = true;
         });
 
         // this.key_triggered_button("Main Screen", ['m'], () =>{
@@ -433,7 +435,7 @@ export class CatInvaders extends Base_Scene {
 
     check_gameover() {
         for (let b of this.enemies) {
-            if (b.drawn_location[1][3] < this.bottom_of_screen - 4) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen + 5) {
                 this.remove_enemy(this.enemies.indexOf(b));
                 // TODO LOSE CONDITION
                 this.gameover = true;
@@ -453,6 +455,7 @@ export class CatInvaders extends Base_Scene {
 
         this.stopped = true;
         // this.mainscreen = true;
+        this.gameStarted = false;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -543,52 +546,65 @@ export class CatInvaders extends Base_Scene {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
 
+        // game has not started yet, display main screen
+        if (!this.gameStarted) {
+            let center = Mat4.identity().times(Mat4.translation(-5, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Cat Invaders";
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
 
-        // increase by 1 level and start transition
-        // if transition has not already started, score is a multiple of some number,
-        // and the score has not already been incremented (preventing infinite loop)
-        if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
-        {
-            this.enemy_speed = this.enemy_speed - 6;
-            this.level = this.level + 1;
-            this.transition = true;
-            this.counter = 0;
-            this.wave_num = 3;
+            center = Mat4.identity().times(Mat4.translation(-8, this.top_of_screen-10, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let space_string = "Press space to start";
+            this.shapes.text.set_string(space_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
         }
+        else {
 
-        // if transitioning, increment the transition counter
-        // otherwise increment the normal counter
-        // CANNOT PAUSE ON TRANSITION OR GAME OVER
-        if (this.transition || this.gameover)
-        {
-            this.transition_counter = this.transition_counter + 1;
-        }
-        else if (!this.stopped)
-        {
-            this.counter = this.counter + 1;
-        }
-
-        // If either normal gameplay or paused
-        // display the blocks in the back
-        // if normal gameplay, also do all the updates
-        if (!this.transition && !this.gameover)
-        {
-            // move blocks & stuff
-            if (this.stopped)
+            // increase by 1 level and start transition
+            // if transition has not already started, score is a multiple of some number,
+            // and the score has not already been incremented (preventing infinite loop)
+            if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
             {
-                // note: 3 in the z coordinate so that text shows up *on top* of any other items
-                let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-                let start_string = "Press space to start or continue.";
-                this.shapes.text.set_string(start_string, context.context);
-                this.shapes.text.draw(context, program_state, center, this.text_image);
+                this.enemy_speed = this.enemy_speed - 6;
+                this.level = this.level + 1;
+                this.transition = true;
+                this.counter = 0;
+                this.wave_num = 3;
             }
-            else
+
+            // if transitioning, increment the transition counter
+            // otherwise increment the normal counter
+            // CANNOT PAUSE ON TRANSITION OR GAME OVER
+            if (this.transition || this.gameover)
             {
-                if (this.shot) {
-                    this.shot = false;
-                    this.add_bullet(this.position);
+                this.transition_counter = this.transition_counter + 1;
+            }
+            else if (!this.stopped)
+            {
+                this.counter = this.counter + 1;
+            }
+
+            // If either normal gameplay or paused
+            // display the blocks in the back
+            // if normal gameplay, also do all the updates
+            if (!this.transition && !this.gameover)
+            {
+                // move blocks & stuff
+                if (this.stopped)
+                {
+                    // note: 3 in the z coordinate so that text shows up *on top* of any other items
+                    let center = Mat4.identity().times(Mat4.translation(-8, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                    let start_string = "Press space to continue.";
+                    this.shapes.text.set_string(start_string, context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
                 }
-                //if (this.spawn)
+                else
+                {
+                    if (this.shot) {
+                        this.shot = false;
+                        this.add_bullet(this.position);
+                    }
+                    //if (this.spawn)
                     //if ((this.counter % this.enemy_spawn_time) == 0) {
                     if (this.wave_num != 0 && this.enemy_counter == 0 && this.spawn_counter == 1) {
                         this.wave_num = this.wave_num - 1;
@@ -597,82 +613,83 @@ export class CatInvaders extends Base_Scene {
                             this.add_enemy(i);
                         }
                     }
-                this.update_state();
-                this.check_collisions();
-                this.check_gameover();
-                this.cooling_bullet();
+                    this.update_state();
+                    this.check_collisions();
+                    this.check_gameover();
+                    this.cooling_bullet();
+                }
+                model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
+                this.draw_player(context, program_state, model_transform
+                    .times(Mat4.scale(0.5,0.5,0.5))
+                    .times(Mat4.rotation(Math.PI/2,1,0,0)));
+                this.draw_bullet(context, program_state);
+                this.draw_enemy(context, program_state);
             }
-            model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
-            this.draw_player(context, program_state, model_transform
-                .times(Mat4.scale(0.5,0.5,0.5))
-                .times(Mat4.rotation(Math.PI/2,1,0,0)));
-            this.draw_bullet(context, program_state);
-            this.draw_enemy(context, program_state);
-        }
-        else if (this.transition)
-        {
-            let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Next Level: " + this.level;
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-            // after some time, return to normal gameplay
-            if (this.transition_counter == 200)
+            else if (this.transition)
             {
-                this.transition = false;
-                this.transition_counter = 0;
-            }
-        }
-        else if (this.gameover)
-        {
-            let center = Mat4.identity().times(Mat4.translation(-10, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let gameover_string = "Game Over! Main Menu in a few secs...";
-            this.shapes.text.set_string(gameover_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-
-            // add score to list of scores (once)
-            if (this.score != 0)
-            {
-                this.top_scores.push(this.score);
-                this.top_scores.sort();
-                this.score = 0;
-            }
-
-            // display top 10
-            center = center.times(Mat4.translation(0, -4, 0));
-            if (this.top_scores.length > 0) {
-                this.shapes.text.set_string("Top 10 scores: ", context.context);
+                let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let start_string = "Next Level: " + this.level;
+                this.shapes.text.set_string(start_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
-                center = center.times(Mat4.translation(0, -2, 0));
-                center = center.times(Mat4.scale(0.75, 0.75, 0.75));
-                for (let i = 1; i <= this.top_scores.length && i <= 10; i++) {
-                    center = center.times(Mat4.translation(0, -2, 0));
-                    let score_string = i + ". " + this.top_scores[i - 1];
-                    this.shapes.text.set_string(score_string, context.context);
-                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                // after some time, return to normal gameplay
+                if (this.transition_counter == 200)
+                {
+                    this.transition = false;
+                    this.transition_counter = 0;
                 }
             }
-            else {
-                this.shapes.text.set_string("No top scores yet!", context.context);
+            else if (this.gameover)
+            {
+                let center = Mat4.identity().times(Mat4.translation(-10, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let gameover_string = "Game Over! Main Menu in a few secs...";
+                this.shapes.text.set_string(gameover_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
+
+                // add score to list of scores (once)
+                if (this.score != 0)
+                {
+                    this.top_scores.push(this.score);
+                    this.top_scores.sort();
+                    this.score = 0;
+                }
+
+                // display top 10
+                center = center.times(Mat4.translation(0, -4, 0));
+                if (this.top_scores.length > 0) {
+                    this.shapes.text.set_string("Top 10 scores: ", context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                    center = center.times(Mat4.translation(0, -2, 0));
+                    center = center.times(Mat4.scale(0.75, 0.75, 0.75));
+                    for (let i = 1; i <= this.top_scores.length && i <= 10; i++) {
+                        center = center.times(Mat4.translation(0, -2, 0));
+                        let score_string = i + ". " + this.top_scores[i - 1];
+                        this.shapes.text.set_string(score_string, context.context);
+                        this.shapes.text.draw(context, program_state, center, this.text_image);
+                    }
+                }
+                else {
+                    this.shapes.text.set_string("No top scores yet!", context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                }
+
+                if (this.transition_counter == 200) {
+                    this.reset_game();
+                    this.transition_counter = 0;
+                }
             }
 
-            if (this.transition_counter == 200) {
-                this.reset_game();
-                this.transition_counter = 0;
-            }
+            // displaying score
+            let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+            let score_string = "Score: " + this.score;
+            this.shapes.text.set_string(score_string, context.context);
+            this.shapes.text.draw(context, program_state, top_left, this.text_image);
+
+            // displaying current level
+            let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+            let lvl_string = "Level: " + this.level; // + " # of bullets: " + this.bullets.length; // TODO remove testing
+            this.shapes.text.set_string(lvl_string, context.context);
+            this.shapes.text.draw(context, program_state, middle, this.text_image);
         }
-
-        // displaying score
-        let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let score_string = "Score: " + this.score;
-        this.shapes.text.set_string(score_string, context.context);
-        this.shapes.text.draw(context, program_state, top_left, this.text_image);
-
-        // displaying current level
-        let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let lvl_string = "Level: " + this.level; // + " # of bullets: " + this.bullets.length; // TODO remove testing
-        this.shapes.text.set_string(lvl_string, context.context);
-        this.shapes.text.draw(context, program_state, middle, this.text_image);
 
     }
 }
