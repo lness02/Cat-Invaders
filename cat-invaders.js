@@ -246,8 +246,9 @@ class Base_Scene extends Scene {
         this.level = 1;
         this.transition = false; // for transition screen ("Next level: x")
         this.gameover = false;
-        this.threshold = 21; // # of enemies to be killed before next level
-        this.wave_num = 3; // # of "waves" to spawn in each level
+        this.threshold = 7; // # of enemies to be killed before next level
+        this.wave_num = 1; // # of "waves" to spawn in each level
+        this.enemies_killed = 0;
 
         this.bullet_cooldown = 10;
         this.top_scores = [];
@@ -306,16 +307,6 @@ export class CatInvaders extends Base_Scene {
             this.stopped = !this.stopped;
             this.gameStarted = true;
         });
-
-        // this.key_triggered_button("Main Screen", ['m'], () =>{
-        //     this.mainscreen = !this.mainscreen;
-        // });
-
-        // this.new_line();
-        // // TODO for testing purposes
-        // this.key_triggered_button("Spawn enemies [FOR TESTING PURPOSES]", ['p'], () => {
-        //    this.spawn = !this.spawn;
-        // });
     }
 
     draw_bullet(context, program_state) {
@@ -419,14 +410,8 @@ export class CatInvaders extends Base_Scene {
                     this.remove_bullet(this.bullets.indexOf(a));
                     this.remove_enemy(this.enemies.indexOf(b));
                     this.score = this.score+1;
+                    this.enemies_killed = this.enemies_killed + 1;
                 }
-
-                // if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
-                //     this.remove_enemy(this.enemies.indexOf(b));
-                //     // TODO LOSE CONDITION
-                //     this.gameover = true;
-                //     console.log("gameover");
-                // }
             }
             if (a.drawn_location[1][3] > this.top_of_screen+2)
                 this.remove_bullet(this.bullets.indexOf(a));
@@ -465,7 +450,8 @@ export class CatInvaders extends Base_Scene {
         this.spawn_counter = 0;
 
         this.enemy_speed = 60;
-        this.wave_num = 3;
+        this.wave_num = 1;
+        this.enemies_killed = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -496,10 +482,6 @@ export class CatInvaders extends Base_Scene {
             a.drawn_location = a.drawn_location.times(Mat4.translation(0, 1, 0));
             a.inverse = Mat4.inverse(a.drawn_location);
         }
-        // for (let b of this.enemies) {
-        //     b.drawn_location = b.drawn_location.times(Mat4.translation(0, -1 / 10, 0));
-        //     b.inverse = Mat4.inverse(b.drawn_location);
-        // }
         this.update_enemy_state();
     }
 
@@ -561,15 +543,16 @@ export class CatInvaders extends Base_Scene {
         else {
 
             // increase by 1 level and start transition
-            // if transition has not already started, score is a multiple of some number,
-            // and the score has not already been incremented (preventing infinite loop)
-            if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
+            if (!this.transition && this.enemies_killed === (this.threshold))
             {
-                this.enemy_speed = this.enemy_speed - 6;
+                this.enemy_speed = this.enemy_speed - 5;
                 this.level = this.level + 1;
                 this.transition = true;
                 this.counter = 0;
-                this.wave_num = 3;
+                this.wave_num = this.level;
+                this.enemies_killed = 0;
+                this.threshold = this.wave_num * 7;
+                // console.log(this.enemies_killed + " " + (this.wave_num * 7));
             }
 
             // if transitioning, increment the transition counter
