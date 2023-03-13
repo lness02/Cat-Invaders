@@ -6,7 +6,23 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture, Square,
 } = tiny;
 
-// Objects for Satellite
+class Cube extends Shape {
+    constructor() {
+        super("position", "normal",);
+        // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
+        this.arrays.position = Vector3.cast(
+            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
+            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
+            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
+        this.arrays.normal = Vector3.cast(
+            [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+            [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
+        // Arrange the vertices into a square shape in texture space too:
+        this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
+            14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+    }
+}
 class Dish extends Shape {
     constructor() {
         super("position", "normal");
@@ -287,7 +303,6 @@ class EvilEye extends Shape {
     }
 }
 
-
 // TODO: make bullet like an actual bullet
 class Bullet extends Shape {
     constructor() {
@@ -339,40 +354,39 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            cube: new defs.Cube,
+            'cube': new Cube(),
+            'dish': new Dish(),
+            'pyramid': new Pyramid_Face(),
+            'trap': new Trapizoid(),
 
             plane: new defs.Square(),
-            pyramid: new Pyramid_Face(),
-            dish: new Dish(),
-            trap: new Trapizoid(),
-
             dome: new Dome(),
             domeCy : new Dome_Cylinder(),
             ufo: new UfoPlate(),
             evilEye: new EvilEye(),
-
             rock: new defs.Subdivision_Sphere(1),
-
-            'bullet': new Bullet(),
+            'bullet': new defs.Subdivision_Sphere(2),
             'enemy': new Enemy(),
             'text': new Text_Line(35), // change text length here
         };
 
+        const bump = new defs.Fake_Bump_Map(1);
         // *** Materials
         this.materials = {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
-
             catto: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
                 texture: new Texture("assets/powell.png")
             }),
-
-            bullet_material: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#FFffff")}),
+            bullet_material: new Material(bump,
+                {ambient: .4, diffusivity: .6, color: hex_color("#964B00")}),
             enemy_material: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")})
+                {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")}),
+            rock_material: new Material(bump,
+                {ambient: 0.4, diffusivity: .6, color: hex_color("#808080")}),
+
         };
 
         // Make simpler dummy shapes for representing all other shapes during collisions:
@@ -410,6 +424,7 @@ class Base_Scene extends Scene {
 
         this.stopped = true;
         // this.mainscreen = true;
+        this.gameStarted = false;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -430,8 +445,9 @@ class Base_Scene extends Scene {
         this.level = 1;
         this.transition = false; // for transition screen ("Next level: x")
         this.gameover = false;
-        this.threshold = 21; // # of enemies to be killed before next level
-        this.wave_num = 3; // # of "waves" to spawn in each level
+        this.threshold = 7; // # of enemies to be killed before next level
+        this.wave_num = 1; // # of "waves" to spawn in each level
+        this.enemies_killed = 0;
 
         this.bullet_cooldown = 10;
         this.top_scores = [];
@@ -488,33 +504,36 @@ export class CatInvaders extends Base_Scene {
         });
         this.key_triggered_button("Pause/Unpause", [' '], () =>{
             this.stopped = !this.stopped;
+            this.gameStarted = true;
         });
-
-        // this.key_triggered_button("Main Screen", ['m'], () =>{
-        //     this.mainscreen = !this.mainscreen;
-        // });
-
-        // this.new_line();
-        // // TODO for testing purposes
-        // this.key_triggered_button("Spawn enemies [FOR TESTING PURPOSES]", ['p'], () => {
-        //    this.spawn = !this.spawn;
-        // });
     }
 
     draw_bullet(context, program_state) {
         for (let b of this.bullets) {
-            this.shapes.bullet.draw(context, program_state,
-                b.drawn_location.times(Mat4.scale(0.5, 0.5, 0.5)),
-                this.materials.bullet_material);
+            this.shapes.bullet.draw(context, program_state, b.drawn_location.times(Mat4.scale(0.5, 0.5, 0.5)), this.materials.bullet_material);
         }
     }
 
     draw_enemy(context, program_state)
     {
         for (let b of this.enemies) {
-            this.shapes.enemy.draw(context, program_state, b.drawn_location, this.materials.enemy_material);
+            if (this.level < 3)
+                this.draw_rock(context, program_state, b.drawn_location);
+            else if (this.level < 5)
+                this.draw_ufo(context, program_state, b.drawn_location);
+            else if (this.level < 7)
+                this.draw_amogus(context, program_state, b.drawn_location, ["#c51111", "#7a0838"]);
+            else if (this.level < 9)
+                this.draw_amogus(context, program_state, b.drawn_location, ["#132ed1", "#09158e"]);
+            else if (this.level < 11)
+                this.draw_amogus(context, program_state, b.drawn_location, ["#117f2d", "#0a4d2e"]);
+            else if (this.level < 13)
+                this.draw_amogus(context, program_state, b.drawn_location, ["#ed54ba", "#ab2bad"]);
+            else
+                this.draw_amogus(context, program_state, b.drawn_location, ["#ef7d0d", "#b33e15"]);
         }
     }
+
 
     set_amogus_color() {
         let random = Math.floor(Math.random() * 4);
@@ -533,29 +552,29 @@ export class CatInvaders extends Base_Scene {
     draw_amogus(context, program_state, model_transform, color) {
         // Feet
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.translation(-2.5,0,0))                               // Left Foot
+            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(-2.5,0,0))                               // Left Foot
                 .times(Mat4.scale(1.5,1.5,1.5)),
             this.materials.plastic.override({color:hex_color(color[0])}));
         this.shapes.cube.draw(context, program_state,                                               // Right Foot
-            model_transform.times(Mat4.translation(2.5,0,0))
+            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(2.5,0,0))
                 .times(Mat4.scale(1.5,1.5,1.5)),
             this.materials.plastic.override({color:hex_color(color[0])}));
 
         // Body
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.translation(0,5.5,0))
+            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,5.5,0))
                 .times(Mat4.scale(4, 4.5, 1.5)),
             this.materials.plastic.override({color:hex_color(color[0])}));
 
         // Backpack
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.translation(5.5,4.5,0))
+            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(5.5,4.5,0))
                 .times(Mat4.scale(1.5, 3, 1)),
             this.materials.plastic.override({color:hex_color(color[1])}));
 
         // Visor
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.translation(-2.5,6,0))
+            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(-2.5,6,0))
                 .times(Mat4.scale(2.5, 1.5, 2 )),
             this.materials.plastic.override({color:hex_color("#9dc1d1")}));
     }
@@ -576,12 +595,12 @@ export class CatInvaders extends Base_Scene {
     draw_rock(context, program_state, model_transform /*, rotation, color*/) {
         let rock_transform = model_transform/*.rotation(rotation, 0, 1, 0)*/;
         this.shapes.rock.draw(context, program_state, rock_transform,
-            this.materials.plastic/*.override({color:hex_color(color)})*/);
+            this.materials.rock_material/*.override({color:hex_color(color)})*/);
     }
 
     draw_ufo(context, program_state, model_transform) {
         // Base
-        let ufo_base_transform = model_transform.times(Mat4.translation(0,-1.5,0));
+        let ufo_base_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,-1.5,0));
         this.shapes.ufo.draw(context, program_state,                                                // Top Plate
             ufo_base_transform.times(Mat4.scale(.85,1.5,.85)),
             this.materials.plastic.override({color:hex_color("#ffffff")}));
@@ -599,7 +618,7 @@ export class CatInvaders extends Base_Scene {
         }
 
         // Dome
-        let ufo_dome_transform = model_transform;
+        let ufo_dome_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2));
         this.shapes.domeCy.draw(context,program_state, ufo_dome_transform,                          // Cylinder Part
             this.materials.plastic.override({color:hex_color("#91ddf2")}));
         this.shapes.dome.draw(context, program_state,                                               // Round Part
@@ -607,7 +626,7 @@ export class CatInvaders extends Base_Scene {
             this.materials.plastic.override({color:hex_color("#91ddf2")}));
 
         // Face
-        let ufo_face_transform = model_transform.times(Mat4.translation(0,0.5,3))
+        let ufo_face_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,0.5,3))
             .times(Mat4.scale(.5,.5,1.25));
         this.shapes.evilEye.draw(context, program_state,                                            // Left Eye
             ufo_face_transform.times(Mat4.translation(-1,0,0)),
@@ -692,7 +711,7 @@ export class CatInvaders extends Base_Scene {
         this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
             .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0));
         let a = this.enemies.at(this.enemies.length-1);
-            a.inverse = Mat4.inverse(a.drawn_location);
+        a.inverse = Mat4.inverse(a.drawn_location);
     }
 
     remove_bullet(index)
@@ -718,14 +737,8 @@ export class CatInvaders extends Base_Scene {
                     this.remove_bullet(this.bullets.indexOf(a));
                     this.remove_enemy(this.enemies.indexOf(b));
                     this.score = this.score+1;
+                    this.enemies_killed = this.enemies_killed + 1;
                 }
-
-                // if (b.drawn_location[1][3] < this.bottom_of_screen-2) {
-                //     this.remove_enemy(this.enemies.indexOf(b));
-                //     // TODO LOSE CONDITION
-                //     this.gameover = true;
-                //     console.log("gameover");
-                // }
             }
             if (a.drawn_location[1][3] > this.top_of_screen+2)
                 this.remove_bullet(this.bullets.indexOf(a));
@@ -734,7 +747,7 @@ export class CatInvaders extends Base_Scene {
 
     check_gameover() {
         for (let b of this.enemies) {
-            if (b.drawn_location[1][3] < this.bottom_of_screen - 4) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen + 3) {
                 this.remove_enemy(this.enemies.indexOf(b));
                 // TODO LOSE CONDITION
                 this.gameover = true;
@@ -754,6 +767,7 @@ export class CatInvaders extends Base_Scene {
 
         this.stopped = true;
         // this.mainscreen = true;
+        this.gameStarted = false;
 
         // TODO consider using something else for timing
         this.counter = 0;
@@ -763,7 +777,8 @@ export class CatInvaders extends Base_Scene {
         this.spawn_counter = 0;
 
         this.enemy_speed = 60;
-        this.wave_num = 3;
+        this.wave_num = 1;
+        this.enemies_killed = 0;
 
         // TODO for testing purposes
         this.spawn = false;
@@ -794,10 +809,6 @@ export class CatInvaders extends Base_Scene {
             a.drawn_location = a.drawn_location.times(Mat4.translation(0, 1, 0));
             a.inverse = Mat4.inverse(a.drawn_location);
         }
-        // for (let b of this.enemies) {
-        //     b.drawn_location = b.drawn_location.times(Mat4.translation(0, -1 / 10, 0));
-        //     b.inverse = Mat4.inverse(b.drawn_location);
-        // }
         this.update_enemy_state();
     }
 
@@ -844,136 +855,151 @@ export class CatInvaders extends Base_Scene {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
 
+        // game has not started yet, display main screen
+        if (!this.gameStarted) {
+            let center = Mat4.identity().times(Mat4.translation(-5, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let start_string = "Cat Invaders";
+            this.shapes.text.set_string(start_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
 
-        // increase by 1 level and start transition
-        // if transition has not already started, score is a multiple of some number,
-        // and the score has not already been incremented (preventing infinite loop)
-        if (!this.transition && this.score != 0 && this.score % this.threshold == 0 && this.level - 1 != this.score / this.threshold)
-        {
-            this.enemy_speed = this.enemy_speed - 6;
-            this.level = this.level + 1;
-            this.transition = true;
-            this.counter = 0;
-            this.wave_num = 3;
+            center = Mat4.identity().times(Mat4.translation(-8, this.top_of_screen-10, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            let space_string = "Press space to start";
+            this.shapes.text.set_string(space_string, context.context);
+            this.shapes.text.draw(context, program_state, center, this.text_image);
         }
+        else {
 
-        // if transitioning, increment the transition counter
-        // otherwise increment the normal counter
-        // CANNOT PAUSE ON TRANSITION OR GAME OVER
-        if (this.transition || this.gameover)
-        {
-            this.transition_counter = this.transition_counter + 1;
-        }
-        else if (!this.stopped)
-        {
-            this.counter = this.counter + 1;
-        }
-
-        // If either normal gameplay or paused
-        // display the blocks in the back
-        // if normal gameplay, also do all the updates
-        if (!this.transition && !this.gameover)
-        {
-            // move blocks & stuff
-            if (this.stopped)
+            // increase by 1 level and start transition
+            if (!this.transition && this.enemies_killed === (this.threshold))
             {
-                // note: 3 in the z coordinate so that text shows up *on top* of any other items
-                let center = Mat4.identity().times(Mat4.translation(-12, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-                let start_string = "Press space to start or continue.";
-                this.shapes.text.set_string(start_string, context.context);
-                this.shapes.text.draw(context, program_state, center, this.text_image);
+                this.enemy_speed = this.enemy_speed - 5;
+                this.level = this.level + 1;
+                this.transition = true;
+                this.counter = 0;
+                this.wave_num = this.level;
+                this.enemies_killed = 0;
+                this.threshold = this.wave_num * 7;
+                // console.log(this.enemies_killed + " " + (this.wave_num * 7));
             }
-            else
+
+            // if transitioning, increment the transition counter
+            // otherwise increment the normal counter
+            // CANNOT PAUSE ON TRANSITION OR GAME OVER
+            if (this.transition || this.gameover)
             {
-                if (this.shot) {
-                    this.shot = false;
-                    this.add_bullet(this.position);
+                this.transition_counter = this.transition_counter + 1;
+            }
+            else if (!this.stopped)
+            {
+                this.counter = this.counter + 1;
+            }
+
+            // If either normal gameplay or paused
+            // display the blocks in the back
+            // if normal gameplay, also do all the updates
+            if (!this.transition && !this.gameover)
+            {
+                // move blocks & stuff
+                if (this.stopped)
+                {
+                    // note: 3 in the z coordinate so that text shows up *on top* of any other items
+                    let center = Mat4.identity().times(Mat4.translation(-8, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                    let start_string = "Press space to continue.";
+                    this.shapes.text.set_string(start_string, context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
                 }
-                //if (this.spawn)
+                else
+                {
+                    if (this.shot) {
+                        this.shot = false;
+                        this.add_bullet(this.position);
+                    }
+                    //if (this.spawn)
                     //if ((this.counter % this.enemy_spawn_time) == 0) {
                     if (this.wave_num != 0 && this.enemy_counter == 0 && this.spawn_counter == 1) {
                         this.wave_num = this.wave_num - 1;
                         // spawn enemies in a row
-                        for (let i = -9; i < 10; i += 3) {
+                        for (let i = -12; i < 13; i += 4) {
                             this.add_enemy(i);
                         }
                     }
-                this.update_state();
-                this.check_collisions();
-                this.check_gameover();
-                this.cooling_bullet();
+                    this.update_state();
+                    this.check_collisions();
+                    this.check_gameover();
+                    this.cooling_bullet();
+                }
+                model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
+                this.draw_player(context, program_state, model_transform
+                    .times(Mat4.scale(0.5,0.5,0.5))
+                    .times(Mat4.rotation(Math.PI/2,1,0,0)));
+                this.draw_bullet(context, program_state);
+                this.draw_enemy(context, program_state);
             }
-            model_transform = model_transform.times(Mat4.translation(this.position, 0, 0));
-            this.draw_player(context, program_state, model_transform
-                .times(Mat4.scale(0.5,0.5,0.5))
-                .times(Mat4.rotation(Math.PI/2,1,0,0)));
-            this.draw_bullet(context, program_state);
-            this.draw_enemy(context, program_state);
-        }
-        else if (this.transition)
-        {
-            let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Next Level: " + this.level;
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-            // after some time, return to normal gameplay
-            if (this.transition_counter == 200)
+            else if (this.transition)
             {
-                this.transition = false;
-                this.transition_counter = 0;
-            }
-        }
-        else if (this.gameover)
-        {
-            let center = Mat4.identity().times(Mat4.translation(-10, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let gameover_string = "Game Over! Main Menu in a few secs...";
-            this.shapes.text.set_string(gameover_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
-
-            // add score to list of scores (once)
-            if (this.score != 0)
-            {
-                this.top_scores.push(this.score);
-                this.top_scores.sort();
-                this.score = 0;
-            }
-
-            // display top 10
-            center = center.times(Mat4.translation(0, -4, 0));
-            if (this.top_scores.length > 0) {
-                this.shapes.text.set_string("Top 10 scores: ", context.context);
+                let center = Mat4.identity().times(Mat4.translation(-6, (this.top_of_screen-this.bottom_of_screen) / 2, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let start_string = "Next Level: " + this.level;
+                this.shapes.text.set_string(start_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
-                center = center.times(Mat4.translation(0, -2, 0));
-                center = center.times(Mat4.scale(0.75, 0.75, 0.75));
-                for (let i = 1; i <= this.top_scores.length && i <= 10; i++) {
-                    center = center.times(Mat4.translation(0, -2, 0));
-                    let score_string = i + ". " + this.top_scores[i - 1];
-                    this.shapes.text.set_string(score_string, context.context);
-                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                // after some time, return to normal gameplay
+                if (this.transition_counter == 200)
+                {
+                    this.transition = false;
+                    this.transition_counter = 0;
                 }
             }
-            else {
-                this.shapes.text.set_string("No top scores yet!", context.context);
+            else if (this.gameover)
+            {
+                let center = Mat4.identity().times(Mat4.translation(-10, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+                let gameover_string = "Game Over! Main Menu in a few secs...";
+                this.shapes.text.set_string(gameover_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
+
+                // add score to list of scores (once)
+                if (this.score != 0)
+                {
+                    this.top_scores.push(this.score);
+                    this.top_scores.sort();
+                    this.score = 0;
+                }
+
+                // display top 10
+                center = center.times(Mat4.translation(0, -4, 0));
+                if (this.top_scores.length > 0) {
+                    this.shapes.text.set_string("Top 10 scores: ", context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                    center = center.times(Mat4.translation(0, -2, 0));
+                    center = center.times(Mat4.scale(0.75, 0.75, 0.75));
+                    for (let i = 1; i <= this.top_scores.length && i <= 10; i++) {
+                        center = center.times(Mat4.translation(0, -2, 0));
+                        let score_string = i + ". " + this.top_scores[i - 1];
+                        this.shapes.text.set_string(score_string, context.context);
+                        this.shapes.text.draw(context, program_state, center, this.text_image);
+                    }
+                }
+                else {
+                    this.shapes.text.set_string("No top scores yet!", context.context);
+                    this.shapes.text.draw(context, program_state, center, this.text_image);
+                }
+
+                if (this.transition_counter == 200) {
+                    this.reset_game();
+                    this.transition_counter = 0;
+                }
             }
 
-            if (this.transition_counter == 200) {
-                this.reset_game();
-                this.transition_counter = 0;
-            }
+            // displaying score
+            let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+            let score_string = "Score: " + this.score;
+            this.shapes.text.set_string(score_string, context.context);
+            this.shapes.text.draw(context, program_state, top_left, this.text_image);
+
+            // displaying current level
+            let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
+            let lvl_string = "Level: " + this.level; // + " # of bullets: " + this.bullets.length; // TODO remove testing
+            this.shapes.text.set_string(lvl_string, context.context);
+            this.shapes.text.draw(context, program_state, middle, this.text_image);
         }
-
-        // displaying score
-        let top_left = Mat4.identity().times(Mat4.translation(-18, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let score_string = "Score: " + this.score;
-        this.shapes.text.set_string(score_string, context.context);
-        this.shapes.text.draw(context, program_state, top_left, this.text_image);
-
-        // displaying current level
-        let middle = Mat4.identity().times(Mat4.translation(-2, this.top_of_screen, 3)).times(Mat4.scale(0.3, 0.3, 0.3));
-        let lvl_string = "Level: " + this.level; // + " # of bullets: " + this.bullets.length; // TODO remove testing
-        this.shapes.text.set_string(lvl_string, context.context);
-        this.shapes.text.draw(context, program_state, middle, this.text_image);
 
     }
 }
