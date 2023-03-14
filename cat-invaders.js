@@ -518,35 +518,45 @@ export class CatInvaders extends Base_Scene {
     {
         for (let b of this.enemies) {
             if (this.level < 3)
-                this.draw_rock(context, program_state, b.drawn_location);
+                this.draw_rock(context, program_state, b.drawn_location, b.color[0], b.rotation);
             else if (this.level < 5)
                 this.draw_ufo(context, program_state, b.drawn_location);
-            else if (this.level < 7)
-                this.draw_amogus(context, program_state, b.drawn_location, ["#c51111", "#7a0838"]);
-            else if (this.level < 9)
-                this.draw_amogus(context, program_state, b.drawn_location, ["#132ed1", "#09158e"]);
-            else if (this.level < 11)
-                this.draw_amogus(context, program_state, b.drawn_location, ["#117f2d", "#0a4d2e"]);
-            else if (this.level < 13)
-                this.draw_amogus(context, program_state, b.drawn_location, ["#ed54ba", "#ab2bad"]);
+            else if (this.level < 8)
+                this.draw_amogus(context, program_state, b.drawn_location, b.color);
             else
-                this.draw_amogus(context, program_state, b.drawn_location, ["#ef7d0d", "#b33e15"]);
+                this.draw_amogus(context, program_state, b.drawn_location, b.color);
         }
     }
 
 
-    set_amogus_color() {
-        let random = Math.floor(Math.random() * 4);
-        switch(random) {
-            case 0:
-                return '#';
-            case 1:
-                return '#';
-            case 2:
-                return '#';
-            case 3:
-                return '#';
-        }
+    set_amogus_color(warm) {
+        let random = Math.floor(Math.random() * 5);
+        if (warm)
+            switch(random) {
+                case 0:
+                    return ["#c51111", "#7a0838"];
+                case 1:
+                    return ["#ed54ba", "#ab2bad"];
+                case 2:
+                    return ["#ef7d0d", "#b33e15"];
+                case 3:
+                    return ["#f5f557", "#c28722"];
+                case 4:
+                    return ["#71491e", "#5e2615"];
+            }
+        else
+            switch(random) {
+                case 0:
+                    return ["#132ed1", "#09158e"];
+                case 1:
+                    return ["#117f2d", "#0a4d2e"];
+                case 2:
+                    return ["#38fedc", "#24a8be"];
+                case 3:
+                    return ["#50ef39", "#15a742"];
+                case 4:
+                    return ["#6b2fbb", "#3b177c"];
+            }
     }
 
     draw_amogus(context, program_state, model_transform, color) {
@@ -592,10 +602,10 @@ export class CatInvaders extends Base_Scene {
                 return '#F2FDFF';
         }
     }
-    draw_rock(context, program_state, model_transform /*, rotation, color*/) {
-        let rock_transform = model_transform/*.rotation(rotation, 0, 1, 0)*/;
+    draw_rock(context, program_state, model_transform, color, rotation) {
+        let rock_transform = model_transform.times(Mat4.rotation(rotation, 0, 1, 0));
         this.shapes.rock.draw(context, program_state, rock_transform,
-            this.materials.rock_material/*.override({color:hex_color(color)})*/);
+            this.materials.rock_material.override({color:hex_color(color)}));
     }
 
     draw_ufo(context, program_state, model_transform) {
@@ -708,8 +718,18 @@ export class CatInvaders extends Base_Scene {
 
     add_enemy(position)
     {
+        let col = [];
+        let rot = 0;
+        if (this.level < 3)
+            rot = Math.PI * Math.random();
+        if (this.level < 5)
+            col = [this.set_rock_color()];
+        else if (this.level < 8)
+            col = this.set_amogus_color(true);
+        else
+            col = this.set_amogus_color(false);
         this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
-            .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0));
+            .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0, col, rot));
         let a = this.enemies.at(this.enemies.length-1);
         a.inverse = Mat4.inverse(a.drawn_location);
     }
@@ -872,7 +892,7 @@ export class CatInvaders extends Base_Scene {
             // increase by 1 level and start transition
             if (!this.transition && this.enemies_killed === (this.threshold))
             {
-                this.enemy_speed = this.enemy_speed - 5;
+                this.enemy_speed = this.enemy_speed - 4;
                 this.level = this.level + 1;
                 this.transition = true;
                 this.counter = 0;
