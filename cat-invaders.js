@@ -386,6 +386,11 @@ class Base_Scene extends Scene {
                 {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")}),
             rock_material: new Material(bump,
                 {ambient: 0.4, diffusivity: .6, color: hex_color("#808080")}),
+            galaxy: new Material(new defs.Textured_Phong, {
+                color: hex_color("#000000"),
+                ambient: 1.0,
+                texture: new Texture("assets/popcat.jpg")
+            }),
 
         };
 
@@ -854,6 +859,18 @@ export class CatInvaders extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
+
+        // this.shapes.plane.draw(context, program_state,                                              // Cat
+        //     model_transform.times(Mat4.translation(0,2.01,0))
+        //         .times(Mat4.rotation(Math.PI/2,1,0,0))
+        //         .times(Mat4.rotation(Math.PI,0,0,1)),
+        //     this.materials.catto);
+
+        // background?
+        // change for main menu vs gameover vs whatever
+        this.shapes.plane.draw(context, program_state,                                              // Cat
+            model_transform.times(Mat4.translation(0,10,0)).times(Mat4.scale(23,23,0)),
+            this.materials.galaxy);
 
         // game has not started yet, display main screen
         if (!this.gameStarted) {
