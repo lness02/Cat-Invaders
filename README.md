@@ -6,4 +6,4 @@ Play as a space cat defending your planet against aliens with supersonic kibble 
 Use 'A' and 'D' to move your character left and right, respectively. Use 'S' to shoot kibble upwards. Use 'spacebar' to start, continue, and pause the game. 
 
 ## To Play
-Run the file 'index.html' to see the game in your browser. 
+Download code and run the file 'index.html' to see the game in your browser. 
