@@ -386,7 +386,17 @@ class Base_Scene extends Scene {
                 {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")}),
             rock_material: new Material(bump,
                 {ambient: 0.4, diffusivity: .6, color: hex_color("#808080")}),
-            galaxy: new Material(new defs.Textured_Phong, {
+            mainMenu: new Material(new defs.Textured_Phong, {
+                color: hex_color("#000000"),
+                ambient: 1.0,
+                texture: new Texture("assets/begining_screen.png")
+            }),
+            starBackground: new Material(new defs.Textured_Phong, {
+                color: hex_color("#000000"),
+                ambient: 1.0,
+                texture: new Texture("assets/concept_pt_2.png")
+            }),
+            gameOver: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
                 texture: new Texture("assets/popcat.jpg")
@@ -880,32 +890,23 @@ export class CatInvaders extends Base_Scene {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
 
-        // this.shapes.plane.draw(context, program_state,                                              // Cat
-        //     model_transform.times(Mat4.translation(0,2.01,0))
-        //         .times(Mat4.rotation(Math.PI/2,1,0,0))
-        //         .times(Mat4.rotation(Math.PI,0,0,1)),
-        //     this.materials.catto);
-
-        // background?
-        // change for main menu vs gameover vs whatever
-        this.shapes.plane.draw(context, program_state,                                              // Cat
-            model_transform.times(Mat4.translation(0,10,0)).times(Mat4.scale(23,23,0)),
-            this.materials.galaxy);
-
         // game has not started yet, display main screen
         if (!this.gameStarted) {
-            let center = Mat4.identity().times(Mat4.translation(-5, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
-            let start_string = "Cat Invaders";
-            this.shapes.text.set_string(start_string, context.context);
-            this.shapes.text.draw(context, program_state, center, this.text_image);
+            // let center = Mat4.identity().times(Mat4.translation(-5, this.top_of_screen-6, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            // let start_string = "Cat Invaders";
+            // this.shapes.text.set_string(start_string, context.context);
+            // this.shapes.text.draw(context, program_state, center, this.text_image);
 
-            center = Mat4.identity().times(Mat4.translation(-8, this.top_of_screen-10, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
+            this.shapes.plane.draw(context, program_state,                                              // Cat
+                model_transform.times(Mat4.translation(0,8,0)).times(Mat4.scale(23,23,0)),
+                this.materials.mainMenu);
+
+            let center = Mat4.identity().times(Mat4.translation(-7, this.top_of_screen-15, 3)).times(Mat4.scale(0.5, 0.5, 0.5));
             let space_string = "Press space to start";
             this.shapes.text.set_string(space_string, context.context);
             this.shapes.text.draw(context, program_state, center, this.text_image);
         }
         else {
-
             // increase by 1 level and start transition
             if (!this.transition && this.enemies_killed === (this.threshold))
             {
@@ -930,6 +931,11 @@ export class CatInvaders extends Base_Scene {
             {
                 this.counter = this.counter + 1;
             }
+
+            // background
+            this.shapes.plane.draw(context, program_state,                                              // Cat
+                model_transform.times(Mat4.translation(0,8,-.75)).times(Mat4.scale(23,23,0)),
+                this.materials.starBackground);
 
             // If either normal gameplay or paused
             // display the blocks in the back
@@ -991,6 +997,11 @@ export class CatInvaders extends Base_Scene {
                 let gameover_string = "Game Over! Main Menu in a few secs...";
                 this.shapes.text.set_string(gameover_string, context.context);
                 this.shapes.text.draw(context, program_state, center, this.text_image);
+
+                // game over screen
+                this.shapes.plane.draw(context, program_state,                                              // Cat
+                    model_transform.times(Mat4.translation(0,8,0)).times(Mat4.scale(23,23,0)),
+                    this.materials.gameOver);
 
                 // add score to list of scores (once)
                 if (this.score != 0)
