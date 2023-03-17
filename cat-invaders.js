@@ -3,7 +3,7 @@ import {Text_Line} from './examples/text-demo.js'
 import {Body} from './examples/collisions-demo.js'
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture, Square,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Shader, Material, Scene, Texture, Square,
 } = tiny;
 
 class Cube extends Shape {
@@ -21,6 +21,34 @@ class Cube extends Shape {
         // Arrange the vertices into a square shape in texture space too:
         this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+    }
+}
+class Cube_Outline extends Shape {
+    constructor() {
+        super("position", "color");
+        //  TODO (Requirement 5).
+        // When a set of lines is used in graphics, you should think of the list entries as
+        // broken down into pairs; each pair of vertices will be drawn as a line segment.
+        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
+
+        this.arrays.position = Vector3.cast(
+            [-1,-1,1], [-1,-1,-1],
+            [-1,1,-1], [-1,-1,-1],
+            [-1,1,1], [-1,-1,1],
+            [-1,1,1], [-1,1,-1],
+            [1,-1,-1], [-1,-1,-1],
+            [1,-1,1], [-1,-1,1],
+            [1,-1,1], [1,-1,-1],
+            [1,1,-1], [-1,1,-1],
+            [1,1,-1], [1,-1,-1],
+            [1,1,1], [-1,1,1],
+            [1,1,1], [1,-1,1],
+            [1,1,1], [1,1,-1]
+        );
+        for (let i=0; i<24; i++) {
+            this.arrays.color[i] = color(1,1,1,1);
+        }
+        this.indices = false;
     }
 }
 
@@ -227,7 +255,6 @@ class Right2_Panel_Texture extends defs.Textured_Phong {
         } `;
     }
 }
-
 class Left1_Panel_Texture extends defs.Textured_Phong {
     fragment_glsl_code() {
         return this.shared_glsl_code() + `
@@ -494,48 +521,95 @@ class EvilEye extends Shape {
     }
 }
 
-
-
-
-// TODO: make bullet like an actual bullet
-class Bullet extends Shape {
+// Bullet Shader
+class ColorShift extends Shader {
     constructor() {
-        super("position", "normal");
-        this.arrays.position = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-        this.arrays.normal = Vector3.cast(
-            [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
-            [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
-        // Arrange the vertices into a square shape in texture space too:
-        this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
-            14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
-        this.bullet_x = 0;
-        this.bullet_y = 0;
+        super();
+    }
+
+    shared_glsl_code() {
+        // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+        return ` 
+        precision mediump float;
+        
+        varying vec4 position_WCS; // <---
+        `;
+    }
+
+    vertex_glsl_code() {
+        // ********* VERTEX SHADER *********
+        return this.shared_glsl_code() + `
+            attribute vec3 position, normal;       
+            
+            uniform mat4 model_transform;
+            uniform mat4 projection_camera_model_transform;
+    
+            void main(){                                                                   
+                // The vertex's final resting place (in NDCS):
+                gl_Position = projection_camera_model_transform * vec4( position, 1.0 ); 
+                position_WCS = model_transform * vec4( position, 1.0 ); 
+            } `;
+    }
+
+    fragment_glsl_code() {
+        // ********* FRAGMENT SHADER *********
+        return this.shared_glsl_code() + `
+            uniform vec4 base_color; 
+            uniform vec4 mid_color; // <---
+            uniform vec4 top_color; // <---
+        
+            vec4 mixed_color;
+            float factor;
+            
+            void main(){              
+                if (position_WCS.y < -3.) {
+                    mixed_color = base_color;
+                }
+                else if (position_WCS.y < 10.) {
+                    factor = (position_WCS.y + 3.) / 13.;
+                    mixed_color = factor * mid_color + (1.0 - factor) * base_color;
+                }
+                else if (position_WCS.y < 23.) {
+                    factor = (position_WCS.y - 10.) / 13.;
+                    mixed_color = factor * top_color + (1.0 - factor) * mid_color;
+                }
+                else {
+                    mixed_color = top_color;
+                }
+                    
+                gl_FragColor = mixed_color;
+            } `;
+    }
+
+    // CHANGED
+    send_material(gl, gpu, material) {
+        // send_material(): Send the desired shape-wide material qualities to the
+        // graphics card, where they will tweak the Phong lighting formula.
+        gl.uniform4fv(gpu.base_color, material.base_color);
+        gl.uniform4fv(gpu.mid_color, material.mid_color); // <---
+        gl.uniform4fv(gpu.top_color, material.top_color); // <---
+        gl.uniform1f(gpu.ambient, material.ambient);
+        gl.uniform1f(gpu.diffusivity, material.diffusivity);
+        gl.uniform1f(gpu.specularity, material.specularity);
+        gl.uniform1f(gpu.smoothness, material.smoothness);
+    }
+
+    update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
+        // update_GPU():  Defining how to synchronize our JavaScript's variables to the GPU's:
+        const [P, C, M] = [graphics_state.projection_transform, graphics_state.camera_inverse, model_transform],
+            PCM = P.times(C).times(M);
+        context.uniformMatrix4fv(gpu_addresses.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
+        context.uniformMatrix4fv(gpu_addresses.projection_camera_model_transform, false,
+            Matrix.flatten_2D_to_1D(PCM.transposed()));
+
+        // Set uniform parameters
+        context.uniform4fv(gpu_addresses.base_color, material.base_color);
+        context.uniform4fv(gpu_addresses.mid_color, material.mid_color); // <---
+        context.uniform4fv(gpu_addresses.top_color, material.top_color); // <---
+
     }
 }
 
-// TODO: create enemy model
-class Enemy extends Shape {
-    constructor() {
-        super("position", "normal");
-        this.arrays.position = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-        this.arrays.normal = Vector3.cast(
-            [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
-            [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
-        // Arrange the vertices into a square shape in texture space too:
-        this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
-            14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
-        this.bullet_x = 0;
-        this.bullet_y = 0;
-    }
-}
 
 class Base_Scene extends Scene {
     /**
@@ -548,8 +622,8 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-
             cube: new defs.Cube(),
+            outline: new Cube_Outline(),
             plane: new defs.Square(),
             pyramid: new Pyramid_Face(),
             dish: new Dish(),
@@ -558,13 +632,10 @@ class Base_Scene extends Scene {
             ufo: new UfoPlate(),
             evilEye: new EvilEye(),
             rock: new defs.Subdivision_Sphere(1),
-
-            'bullet': new defs.Subdivision_Sphere(2),
-            'enemy': new Enemy(),
+            bullet: new defs.Subdivision_Sphere(2),
             text: new Text_Line(35), // change text length here
         };
 
-        const bump = new defs.Fake_Bump_Map(1);
         // *** Materials
         this.materials = {
             plastic: new Material(new defs.Phong_Shader(), {
@@ -599,6 +670,10 @@ class Base_Scene extends Scene {
                 diffusivity: 1,
                 specularity: 0,
             }),
+            bullet: new Material(new ColorShift(), {
+                base_color: hex_color("#5400d7"),
+                mid_color: hex_color("#f5f974"),
+                top_color: hex_color("#ff4a9c")}),
 
             panel_2L: new Material(new Left2_Panel_Texture(), {
                 color: hex_color("#000000"),  // <-- changed base color to black
@@ -631,13 +706,6 @@ class Base_Scene extends Scene {
                 texture: new Texture("assets/blank.png")
             }),
 
-            bullet_material: new Material( bump,
-                {ambient: .4, diffusivity: .6, color: hex_color("#964B00")}),
-            enemy_material: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")}),
-            rock_material: new Material(bump,
-                {ambient: 0.4, diffusivity: .6, color: hex_color("#808080")}),
-
             mainMenu: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
@@ -655,6 +723,7 @@ class Base_Scene extends Scene {
             }),
 
         };
+        this.white = new Material(new defs.Basic_Shader());
 
         // Make simpler dummy shapes for representing all other shapes during collisions:
         this.colliders = [
@@ -777,18 +846,20 @@ export class CatInvaders extends Base_Scene {
 
     draw_bullet(context, program_state) {
         for (let b of this.bullets) {
-            this.shapes.bullet.draw(context, program_state, b.drawn_location.times(Mat4.scale(0.5, 0.5, 0.5)), this.materials.bullet_material);
+            this.shapes.bullet.draw(context, program_state,
+                b.drawn_location.times(Mat4.scale(0.5, 0.5, 0.5)),
+                this.materials.bullet);
         }
     }
 
     draw_enemy(context, program_state)
     {
         for (let b of this.enemies) {
-            if (this.level < 2)
+            if (this.level < 4)
                 this.draw_rock(context, program_state,
                     b.drawn_location.times(Mat4.scale(1.2, 1.2, 1.2)),
                     b.color[0], b.rotation);
-            else if (this.level < 3)
+            else if (this.level < 8)
                 this.draw_amogus(context, program_state,
                     b.drawn_location.times(Mat4.scale(0.2,0.2,0.2)),
                     b.color);
@@ -797,7 +868,6 @@ export class CatInvaders extends Base_Scene {
                     b.drawn_location.times(Mat4.scale(0.2,0.2,0.2)));
         }
     }
-
 
     set_amogus_color() {
         let random = Math.floor(Math.random() * 13);
@@ -809,15 +879,15 @@ export class CatInvaders extends Base_Scene {
             case 1:
             case 5:
             case 10:
-                return ;
+                return ["#6b2fbb", "#3b177c"];
             case 2:
             case 7:
             case 11:
-                return ;
+                return ["#f5f5f5", "#c9c9c9"];
             case 3:
             case 8:
             case 12:
-                return ;
+                return ["#434447", "#34363b"];
             case 6:
                 return ["#c51111", "#7a0838"];
         }
@@ -858,7 +928,7 @@ export class CatInvaders extends Base_Scene {
         let random = Math.floor(Math.random() * 4);
         switch(random) {
             case 0:
-                return '#6b6464';
+                return '#44454d';
             case 1:
                 return '#5400D7';
             case 2:
@@ -874,14 +944,22 @@ export class CatInvaders extends Base_Scene {
             this.materials.base.override({color:hex_color(color)}));
 
         // Eyes
+        this.shapes.outline.draw(context, program_state,
+            model_transform.times(Mat4.translation(0.25,0.125,1))
+                .times(Mat4.scale(0.125,0.3,0.1)),
+            this.white, "LINES" );
         this.shapes.cube.draw(context, program_state,
             model_transform.times(Mat4.translation(0.25,0.125,1))
                 .times(Mat4.scale(0.125,0.3,0.1)),
-            this.materials.flat.override({color:hex_color("#101010")}));
+            this.materials.flat.override({color:hex_color("#000000")}));
+        this.shapes.outline.draw(context, program_state,
+            model_transform.times(Mat4.translation(-0.25,0.125,1))
+                .times(Mat4.scale(0.125,0.3,0.1)),
+            this.white, "LINES" );
         this.shapes.cube.draw(context, program_state,
             model_transform.times(Mat4.translation(-0.25,0.125,1))
                 .times(Mat4.scale(0.125,0.3,0.1)),
-            this.materials.flat.override({color:hex_color("#101010")}));
+            this.materials.flat.override({color:hex_color("#000000")}));
     }
 
     draw_ufo(context, program_state, model_transform) {
@@ -1032,7 +1110,7 @@ export class CatInvaders extends Base_Scene {
 
     add_bullet(position)
     {
-        this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet_material, vec3(0.5, 0.5, 0.5))
+        this.bullets.push(new Body(this.shapes.bullet, this.materials.bullet, vec3(0.5, 0.5, 0.5))
             .emplace(Mat4.translation(position, this.bottom_of_screen, 0), this.bullet_velocity, 0));
         let a = this.bullets.at(this.bullets.length-1);
         a.inverse = Mat4.inverse(a.drawn_location);
@@ -1048,7 +1126,8 @@ export class CatInvaders extends Base_Scene {
         }
         else if (this.level < 8)
             col = this.set_amogus_color();
-        this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
+
+        this.enemies.push(new Body(this.shapes.enemy, this.materials.base, vec3(1, 1, 1))
             .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0, col, rot));
         let a = this.enemies.at(this.enemies.length-1);
         a.inverse = Mat4.inverse(a.drawn_location);
@@ -1087,7 +1166,7 @@ export class CatInvaders extends Base_Scene {
 
     check_gameover() {
         for (let b of this.enemies) {
-            if (b.drawn_location[1][3] < this.bottom_of_screen + 3) {
+            if (b.drawn_location[1][3] < this.bottom_of_screen + 5) {
                 this.remove_enemy(this.enemies.indexOf(b));
                 // TODO LOSE CONDITION
                 this.gameover = true;
@@ -1234,7 +1313,7 @@ export class CatInvaders extends Base_Scene {
 
             // background
             this.shapes.plane.draw(context, program_state,                                              // Cat
-                model_transform.times(Mat4.translation(0,8,-.75)).times(Mat4.scale(23,23,0)),
+                model_transform.times(Mat4.translation(0,8,-5)).times(Mat4.scale(26.5,26.5,0)),
                 this.materials.starBackground);
 
             // If either normal gameplay or paused
