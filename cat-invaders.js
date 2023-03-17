@@ -562,11 +562,11 @@ class ColorShift extends Shader {
             float factor;
             
             void main(){              
-                if (position_WCS.y < -3.) {
+                if (position_WCS.y < 1.) {
                     mixed_color = base_color;
                 }
                 else if (position_WCS.y < 10.) {
-                    factor = (position_WCS.y + 3.) / 13.;
+                    factor = (position_WCS.y -1.) / 9.;
                     mixed_color = factor * mid_color + (1.0 - factor) * base_color;
                 }
                 else if (position_WCS.y < 23.) {
@@ -714,7 +714,7 @@ class Base_Scene extends Scene {
             starBackground: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
-                texture: new Texture("assets/backgroundg.png")
+                texture: new Texture("assets/background.png")
             }),
             gameOver: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
