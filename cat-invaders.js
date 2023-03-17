@@ -714,7 +714,7 @@ class Base_Scene extends Scene {
             starBackground: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
-                texture: new Texture("assets/concept_pt_2.png")
+                texture: new Texture("assets/backgroundg.png")
             }),
             gameOver: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
