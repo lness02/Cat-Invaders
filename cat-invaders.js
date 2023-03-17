@@ -23,6 +23,8 @@ class Cube extends Shape {
             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
     }
 }
+
+// Objects for Satellite
 class Dish extends Shape {
     constructor() {
         super("position", "normal");
@@ -30,7 +32,7 @@ class Dish extends Shape {
             [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
             [-1, 1.5, 5], [-3, 1.5, 4], [-4, 1.5, 3], [-5, 1.5, 1], [-1, 0, 2], [-2, 0, 1],
             [-1, 1.5, -5], [-3, 1.5, -4], [-4, 1.5, -3], [-5, 1.5, -1], [-1, 0, -2], [-2, 0, -1],
-            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0,0,0]
+            [1, 1.5, -5], [3, 1.5, -4], [4, 1.5, -3], [5, 1.5, -1], [1, 0, -2], [2, 0, -1], [0, 0,0]
         );
         this.arrays.normal = Vector3.cast(
             [1, 1.5, 5], [3, 1.5, 4], [4, 1.5, 3], [5, 1.5, 1], [1, 0, 2], [2, 0, 1],
@@ -111,12 +113,218 @@ class Trapizoid extends Shape {
             [1.5, 0, -1], [1.25, 0.25, -0.75]
         );
         this.indices.push(
-            0,1,3,  0,3,2,
-            3,2,4,  3,4,5,
-            4,5,7,  4,7,6,
-            6,7,0,  0,1,7,
-            1,3,7,  3,5,7
+            0,1,3,
+            0,3,2,
+            3,2,4,
+            3,4,5,
+            4,5,7,
+            4,7,6,
+            6,7,0,
+            0,1,7,
+            1,3,7,
+            3,5,7
         );
+    }
+}
+
+// Satellite Panel Textures
+class Left2_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.90) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.85) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
+    }
+}
+class Middle2_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u < 0.20) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.80) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.85) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
+    }
+}
+class Right2_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u < 0.10) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.70) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.85) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
+    }
+}
+
+class Left1_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.90) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.70) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
+    }
+}
+class Middle1_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u < 0.20) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.80) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.70) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
+    }
+}
+class Right1_Panel_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            void main(){
+                vec4 tex_color = texture2D( texture, f_tex_coord );
+                
+                // Add outline
+                float u = mod(f_tex_coord.x, 1.0);
+                float v = mod(f_tex_coord.y, 1.0);
+                if (u <  0.10) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (u > 0.70) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v < 0.30) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+                if (v > 0.70) {
+                    tex_color = vec4(69./255., 91./255., 143./255., 1.);
+                }
+
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
     }
 }
 
@@ -125,43 +333,6 @@ class Dome extends Shape {
     constructor() {
         super("position", "normal",);
         this.arrays.position = Vector3.cast(
-            [1, 0, 4] , [3, 0, 3], [4, 0, 1], [2, 1.5, 2],
-            [-1, 0, 4] , [-3, 0, 3], [-4, 0, 1], [-2, 1.5, 2],
-            [-1, 0, -4] , [-3, 0, -3], [-4, 0, -1], [-2, 1.5, -2],
-            [1, 0, -4] , [3, 0, -3], [4, 0, -1], [2, 1.5, -2]
-        );
-        this.arrays.normal = Vector3.cast(
-            [1, 0, 4] , [3, 0, 3], [4, 0, 1], [2, 1.5, 2],
-            [-1, 0, 4] , [-3, 0, 3], [-4, 0, 1], [-2, 1.5, 2],
-            [-1, 0, -4] , [-3, 0, -3], [-4, 0, -1], [-2, 1.5, -2],
-            [1, 0, -4] , [3, 0, -3], [4, 0, -1], [2, 1.5, -2]
-        );
-        this.indices.push(
-            14,3,2,
-            3,2,1,
-            3,1,0,
-            3,0,7,
-            7,0,4,
-            7,4,5,
-            7,5,6,
-            7,6,11,
-            6,11,10,
-            11,10,9,
-            11,9,8,
-            11,8,15,
-            15,8,12,
-            15,12,13,
-            15,13,14,
-            15,14,3,
-            15,3,7,
-            15,11,7
-        );
-    }
-}
-class Dome_Cylinder extends Shape {
-    constructor() {
-        super("position", "normal",);
-        this.arrays.position = Vector3.cast(
             [1, 1.5, 4], [3, 1.5, 3], [4, 1.5, 1],
             [4, 1.5, -1], [3, 1.5, -3], [1, 1.5, -4],
             [-1, 1.5, 4] , [-3, 1.5, 3], [-4, 1.5, 1],
@@ -170,6 +341,7 @@ class Dome_Cylinder extends Shape {
             [4, 0, -1], [3, 0, -3], [1, 0, -4],
             [-1, 0, 4] , [-3, 0, 3], [-4, 0, 1],
             [-4, 0, -1], [-3, 0, -3], [-1, 0, -4],
+            [2, 3, 2], [-2, 3, 2], [-2, 3, -2], [2, 3, -2]
         );
         this.arrays.normal = Vector3.cast(
             [1, 1.5, 4], [3, 1.5, 3], [4, 1.5, 1],
@@ -180,6 +352,7 @@ class Dome_Cylinder extends Shape {
             [4, 0, -1], [3, 0, -3], [1, 0, -4],
             [-1, 0, 4] , [-3, 0, 3], [-4, 0, 1],
             [-4, 0, -1], [-3, 0, -3], [-1, 0, -4],
+            [2, 3, 2], [-2, 3, 2], [-2, 3, -2], [2, 3, -2]
         );
         this.indices.push(
             0,12,1,
@@ -205,7 +378,25 @@ class Dome_Cylinder extends Shape {
             10,22,11,
             11,22,23,
             6,18,0,
-            0,18,12
+            0,18,12,
+            3,24,2,
+            24,2,1,
+            24,1,0,
+            24,0,25,
+            25,0,6,
+            25,6,7,
+            25,7,8,
+            25,8,26,
+            8,26,9,
+            26,9,10,
+            26,10,11,
+            26,11,27,
+            27,11,5,
+            27,5,4,
+            27,4,3,
+            27,3,24,
+            27,24,25,
+            27,26,25
         );
     }
 }
@@ -303,6 +494,9 @@ class EvilEye extends Shape {
     }
 }
 
+
+
+
 // TODO: make bullet like an actual bullet
 class Bullet extends Shape {
     constructor() {
@@ -354,38 +548,96 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            'cube': new Cube(),
-            'dish': new Dish(),
-            'pyramid': new Pyramid_Face(),
-            'trap': new Trapizoid(),
 
+            cube: new defs.Cube(),
             plane: new defs.Square(),
+            pyramid: new Pyramid_Face(),
+            dish: new Dish(),
+            trap: new Trapizoid(),
             dome: new Dome(),
-            domeCy : new Dome_Cylinder(),
             ufo: new UfoPlate(),
             evilEye: new EvilEye(),
             rock: new defs.Subdivision_Sphere(1),
+
             'bullet': new defs.Subdivision_Sphere(2),
             'enemy': new Enemy(),
-            'text': new Text_Line(35), // change text length here
+            text: new Text_Line(35), // change text length here
         };
 
         const bump = new defs.Fake_Bump_Map(1);
         // *** Materials
         this.materials = {
-            plastic: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
-            catto: new Material(new defs.Textured_Phong, {
-                color: hex_color("#000000"),
-                ambient: 1.0,
+            plastic: new Material(new defs.Phong_Shader(), {
+                ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            catto: new Material(new defs.Textured_Phong(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
                 texture: new Texture("assets/powell.png")
             }),
-            bullet_material: new Material(bump,
+            base: new Material(new defs.Phong_Shader(), {
+                ambient: 0.6,
+                diffusivity: 0.5,
+                specularity: 0,
+            }),
+            satelite_material: new Material(new defs.Phong_Shader(), {
+                ambient: 0.6,
+                diffusivity: 0.8,
+                specularity: 0.7,
+            }),
+            ufo_light: new Material(new defs.Phong_Shader(), {
+                ambient: 1,
+                diffusivity: 0.1,
+                specularity: 0
+            }),
+            glass: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 0
+            }),
+            flat: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 1,
+                specularity: 0,
+            }),
+
+            panel_2L: new Material(new Left2_Panel_Texture(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
+                texture: new Texture("assets/blank.png")
+            }),
+            panel_2M: new Material(new Middle2_Panel_Texture(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
+                texture: new Texture("assets/blank.png")
+            }),
+            panel_2R: new Material(new Right2_Panel_Texture(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
+                texture: new Texture("assets/blank.png")
+            }),
+            panel_1L: new Material(new Left1_Panel_Texture(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
+                texture: new Texture("assets/blank.png")
+            }),
+            panel_1M: new Material(new Middle1_Panel_Texture(), {
+                color: hex_color("#000000"),  // <-- changed base color to black
+                ambient: 1.0,  // <-- changed ambient to 1
+                texture: new Texture("assets/blank.png")
+            }),
+            panel_1R: new Material(new Right1_Panel_Texture(), {
+                color: hex_color("#000000"),
+                ambient: 1.0,
+                texture: new Texture("assets/blank.png")
+            }),
+
+            bullet_material: new Material( bump,
                 {ambient: .4, diffusivity: .6, color: hex_color("#964B00")}),
             enemy_material: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#FF0000")}),
             rock_material: new Material(bump,
                 {ambient: 0.4, diffusivity: .6, color: hex_color("#808080")}),
+
             mainMenu: new Material(new defs.Textured_Phong, {
                 color: hex_color("#000000"),
                 ambient: 1.0,
@@ -532,83 +784,81 @@ export class CatInvaders extends Base_Scene {
     draw_enemy(context, program_state)
     {
         for (let b of this.enemies) {
-            if (this.level < 3)
-                this.draw_rock(context, program_state, b.drawn_location, b.color[0], b.rotation);
-            else if (this.level < 5)
-                this.draw_ufo(context, program_state, b.drawn_location);
-            else if (this.level < 8)
-                this.draw_amogus(context, program_state, b.drawn_location, b.color);
+            if (this.level < 2)
+                this.draw_rock(context, program_state,
+                    b.drawn_location.times(Mat4.scale(1.2, 1.2, 1.2)),
+                    b.color[0], b.rotation);
+            else if (this.level < 3)
+                this.draw_amogus(context, program_state,
+                    b.drawn_location.times(Mat4.scale(0.2,0.2,0.2)),
+                    b.color);
             else
-                this.draw_amogus(context, program_state, b.drawn_location, b.color);
+                this.draw_ufo(context, program_state,
+                    b.drawn_location.times(Mat4.scale(0.2,0.2,0.2)));
         }
     }
 
 
-    set_amogus_color(warm) {
-        let random = Math.floor(Math.random() * 5);
-        if (warm)
-            switch(random) {
-                case 0:
-                    return ["#c51111", "#7a0838"];
-                case 1:
-                    return ["#ed54ba", "#ab2bad"];
-                case 2:
-                    return ["#ef7d0d", "#b33e15"];
-                case 3:
-                    return ["#f5f557", "#c28722"];
-                case 4:
-                    return ["#71491e", "#5e2615"];
-            }
-        else
-            switch(random) {
-                case 0:
-                    return ["#132ed1", "#09158e"];
-                case 1:
-                    return ["#117f2d", "#0a4d2e"];
-                case 2:
-                    return ["#38fedc", "#24a8be"];
-                case 3:
-                    return ["#50ef39", "#15a742"];
-                case 4:
-                    return ["#6b2fbb", "#3b177c"];
-            }
+    set_amogus_color() {
+        let random = Math.floor(Math.random() * 13);
+        switch(random) {
+            case 0:
+            case 4:
+            case 9:
+                return ["#132ed1", "#09158e"];
+            case 1:
+            case 5:
+            case 10:
+                return ;
+            case 2:
+            case 7:
+            case 11:
+                return ;
+            case 3:
+            case 8:
+            case 12:
+                return ;
+            case 6:
+                return ["#c51111", "#7a0838"];
+        }
     }
 
     draw_amogus(context, program_state, model_transform, color) {
         // Feet
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(-2.5,0,0))                               // Left Foot
+            model_transform.times(Mat4.translation(-3,-4,0))
                 .times(Mat4.scale(1.5,1.5,1.5)),
-            this.materials.plastic.override({color:hex_color(color[0])}));
-        this.shapes.cube.draw(context, program_state,                                               // Right Foot
-            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(2.5,0,0))
+            this.materials.base.override({color:hex_color(color[0])}));
+
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(2,-4,0))
                 .times(Mat4.scale(1.5,1.5,1.5)),
-            this.materials.plastic.override({color:hex_color(color[0])}));
+            this.materials.base.override({color:hex_color(color[0])}));
 
         // Body
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,5.5,0))
+            model_transform.times(Mat4.translation(-0.5,1.5,0))
                 .times(Mat4.scale(4, 4.5, 1.5)),
-            this.materials.plastic.override({color:hex_color(color[0])}));
+            this.materials.base.override({color:hex_color(color[0])}));
 
         // Backpack
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(5.5,4.5,0))
+            model_transform.times(Mat4.translation(4,0.5,0))
                 .times(Mat4.scale(1.5, 3, 1)),
-            this.materials.plastic.override({color:hex_color(color[1])}));
+            this.materials.base.override({color:hex_color(color[1])}));
 
         // Visor
         this.shapes.cube.draw(context, program_state,
-            model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(-2.5,6,0))
+            model_transform.times(Mat4.translation(-3,2,0))
                 .times(Mat4.scale(2.5, 1.5, 2 )),
-            this.materials.plastic.override({color:hex_color("#9dc1d1")}));
+            this.materials.glass.override({color:hex_color("#9dc1d1")}));
     }
 
     set_rock_color() {
         let random = Math.floor(Math.random() * 4);
         switch(random) {
             case 0:
-                return '#262626';
+                return '#6b6464';
             case 1:
                 return '#5400D7';
             case 2:
@@ -618,107 +868,164 @@ export class CatInvaders extends Base_Scene {
         }
     }
     draw_rock(context, program_state, model_transform, color, rotation) {
-        let rock_transform = model_transform.times(Mat4.rotation(rotation, 0, 1, 0));
-        this.shapes.rock.draw(context, program_state, rock_transform,
-            this.materials.rock_material.override({color:hex_color(color)}));
+        // Body
+        this.shapes.rock.draw(context, program_state,
+            model_transform.times(Mat4.rotation(rotation, 0, 1, 0)),
+            this.materials.base.override({color:hex_color(color)}));
+
+        // Eyes
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(0.25,0.125,1))
+                .times(Mat4.scale(0.125,0.3,0.1)),
+            this.materials.flat.override({color:hex_color("#101010")}));
+        this.shapes.cube.draw(context, program_state,
+            model_transform.times(Mat4.translation(-0.25,0.125,1))
+                .times(Mat4.scale(0.125,0.3,0.1)),
+            this.materials.flat.override({color:hex_color("#101010")}));
     }
 
     draw_ufo(context, program_state, model_transform) {
         // Base
-        let ufo_base_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,-1.5,0));
-        this.shapes.ufo.draw(context, program_state,                                                // Top Plate
+        let ufo_base_transform = model_transform.times(Mat4.translation(0,-1.5,0));
+        this.shapes.ufo.draw(context, program_state,
             ufo_base_transform.times(Mat4.scale(.85,1.5,.85)),
-            this.materials.plastic.override({color:hex_color("#ffffff")}));
-        this.shapes.ufo.draw(context, program_state,                                                // Bottom Plate
+            this.materials.base.override({color:hex_color("#a5b1ec")}));
+        this.shapes.ufo.draw(context, program_state,
             ufo_base_transform.times(Mat4.scale(.85,1,.85))
                 .times(Mat4.rotation(Math.PI,1,0,0)),
-            this.materials.plastic.override({color:hex_color("#a8a8a8")}));
+            this.materials.base.override({color:hex_color("#8d99d0")}));
 
         // Lights
         for (let i = 0; i < 4; i = i + 1) {
             this.shapes.cube.draw(context, program_state,
                 ufo_base_transform.times(Mat4.rotation(Math.PI * i / 4, 0, 1, 0)
                     .times(Mat4.scale(0.5,0.5,7.2))),
-                this.materials.plastic.override({color:hex_color("#fff98f")}));
+                this.materials.ufo_light.override({color:hex_color("#607bf7")}));
         }
 
         // Dome
-        let ufo_dome_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2));
-        this.shapes.domeCy.draw(context,program_state, ufo_dome_transform,                          // Cylinder Part
-            this.materials.plastic.override({color:hex_color("#91ddf2")}));
-        this.shapes.dome.draw(context, program_state,                                               // Round Part
-            ufo_dome_transform.times(Mat4.translation(0,1.5,0)),
-            this.materials.plastic.override({color:hex_color("#91ddf2")}));
+        this.shapes.dome.draw(context, program_state, model_transform,
+            this.materials.glass.override({color:hex_color("#91ddf2")}));
 
         // Face
-        let ufo_face_transform = model_transform.times(Mat4.scale(0.2, 0.2, 0.2)).times(Mat4.translation(0,0.5,3))
+        let ufo_face_transform = model_transform.times(Mat4.translation(0,0.5,3))
             .times(Mat4.scale(.5,.5,1.25));
         this.shapes.evilEye.draw(context, program_state,                                            // Left Eye
             ufo_face_transform.times(Mat4.translation(-1,0,0)),
-            this.materials.plastic.override({color:hex_color("#ff0000")}));
+            this.materials.flat.override({color:hex_color("#607bf7")}));
         this.shapes.evilEye.draw(context, program_state,                                            // Right Eye
             ufo_face_transform.times(Mat4.translation(1,0,0))
                 .times(Mat4.scale(-1,1,1)),
-            this.materials.plastic.override({color:hex_color("#ff0000")}));
+            this.materials.flat.override({color:hex_color("#607bf7")}));
     }
 
     draw_player(context, program_state, model_transform) {
         // Window
         this.shapes.cube.draw(context, program_state,                                               // Block
-            model_transform.times(Mat4.scale(1,2,1)),
+            model_transform.times(Mat4.scale(1.15,2,1.15)),
             this.materials.plastic.override({color:hex_color("#4E67A2")}));
         this.shapes.plane.draw(context, program_state,                                              // Cat
             model_transform.times(Mat4.translation(0,2.01,0))
                 .times(Mat4.rotation(Math.PI/2,1,0,0))
-                .times(Mat4.rotation(Math.PI,0,0,1)),
+                .times(Mat4.rotation(Math.PI,0,0,1))
+                .times(Mat4.scale(1.25, 1.25, 1.25)),
             this.materials.catto);
 
         // Body
         this.shapes.cube.draw(context, program_state,                                               // Top Half
             model_transform.times(Mat4.translation(0,0,-1))
                 .times(Mat4.scale(2,1.5,1)),
-            this.materials.plastic.override({color:hex_color("#F2FDFF")}));
-
+            this.materials.base.override({color:hex_color("#DBEAF4")}));
         this.shapes.cube.draw(context, program_state,                                               // Bottom Half
             model_transform.times(Mat4.translation(0,0,1.5))
                 .times(Mat4.scale(2,1.5,1.5)),
-            this.materials.plastic.override({color:hex_color("#73A3D7")}));
-
+            this.materials.base.override({color:hex_color("#73A3D7")}));
         this.shapes.trap.draw(context, program_state,
             model_transform.times(Mat4.translation(0,0,3))                                  // Engine Bit (TODO: FIX SHAPE)
                 .times(Mat4.rotation(Math.PI/2,1,0,0)),
-            this.materials.plastic.override({color:hex_color("#73A3D7")}));
+            this.materials.base.override({color:hex_color("#73A3D7")}));
 
         // Dish
         let dish_transform = model_transform.times(Mat4.translation(0,0,-2));
         this.shapes.cube.draw(context, program_state,                                               // Dish Connector
             dish_transform.times(Mat4.scale(0.5,0.5,0.5)),
-            this.materials.plastic.override({color:hex_color("#545454")}));
+            this.materials.base.override({color:hex_color("#545454")}));
         dish_transform = dish_transform.times(Mat4.translation(0,0,-0.5))
             .times(Mat4.rotation(-Math.PI/2,1,0,0));
         this.shapes.dish.draw(context, program_state, dish_transform,                               // Dish
-            this.materials.plastic.override({color:hex_color("#D1E1FF")}));
+            this.materials.satelite_material.override({color:hex_color("#6FC0F3")}));
         this.shapes.pyramid.draw(context, program_state,                                            // Antena
             dish_transform.times(Mat4.translation(0,0.01,0))
                 .times(Mat4.scale(1.5,2.25,1.5)),
-            this.materials.plastic.override({color:hex_color("#BCAFFA")}));
+            this.materials.satelite_material.override({color:hex_color("#ffffff")}));
 
         // Wings
         this.shapes.cube.draw(context, program_state,                                               // Connectors
             model_transform.times(Mat4.scale(2.5,0.25,0.5)),
-            this.materials.plastic.override({color:hex_color("#545454")}));
-        for (let i = 0; i < 3; i++) {                                                               // Wing Panels
-            let wing_shift = 3.25 + 1.5 * i;
-            for ( let j = 0; j < 2; j++) {
-                this.shapes.cube.draw(context, program_state,
-                    model_transform.times(Mat4.translation(wing_shift, 0, 0.5 * (-1)** j))
-                        .times(Mat4.scale(0.75, 0.5, 0.5)),
-                    this.materials.plastic.override({color: hex_color("#4DB5F7")}));
+            this.materials.base.override({color:hex_color("#545454")}));
 
-                this.shapes.cube.draw(context, program_state,
-                    model_transform.times(Mat4.translation(-wing_shift, 0, 0.5 * (-1)** j))
-                        .times(Mat4.scale(0.75, 0.5, 0.5)),
-                    this.materials.plastic.override({color: hex_color("#4DB5F7")}));
+        this.shapes.cube.draw(context, program_state,                                               // Left Wing Base
+            model_transform.times(Mat4.translation( -4.75, 0, 0))
+                .times(Mat4.scale(2.23, 0.48, 0.98)),
+            this.materials.satelite_material.override({color: hex_color("#6FC0F3")}));
+        this.shapes.cube.draw(context, program_state,                                               // Right Wing Base
+            model_transform.times(Mat4.translation( 4.75, 0, 0))
+                .times(Mat4.scale(2.23, 0.45, 0.98)),
+            this.materials.satelite_material.override({color: hex_color("#6FC0F3")}))
+
+        for (let wing_rl = 0; wing_rl < 2; wing_rl++) { // wings right=0 and left=1
+            // X?-Plane
+            for (let imo = 0; imo < 3; imo++) { // inside=0 middle=1 outside=2
+                let material2, material1;
+                switch (imo) {
+                    case 1:
+                        material1 = this.materials.panel_1M;
+                        material2 = this.materials.panel_2M;
+                        break;
+                    case 0:
+                    case 2:
+                        if (wing_rl == imo / 2) {
+                            material1 = this.materials.panel_1L;
+                            material2 = this.materials.panel_2L;
+                        } else {
+                            material1 = this.materials.panel_1R;
+                            material2 = this.materials.panel_2R;
+                        }
+                        break;
+                }
+                let panel_shift = (3.25 + 1.5 * imo) * (-1) ** wing_rl;
+
+                for (let tb = 0; tb < 2; tb++) { // in y direction, top=0 bottom=1
+                    for (let fb = 0; fb < 2; fb++) { // looking at x line, front=0 back=1
+                        this.shapes.plane.draw(context, program_state,                              // Panels on XZ-Plane
+                            model_transform
+                                .times(Mat4.translation(panel_shift, 0.5 * (-1) ** fb, 0.5 * (-1) ** tb))
+                                .times(Mat4.scale(0.75, 0.5, 0.5))
+                                .times(Mat4.rotation(Math.PI / 2 * (-1) ** (tb + 1), 1, 0, 0)),
+                            material2);
+                    }
+                    this.shapes.plane.draw(context, program_state,                                  // Panels on XY-Plane
+                        model_transform.times(Mat4.translation(panel_shift, 0, (-1) ** tb))
+                            .times(Mat4.scale(0.75, 0.5, 0.5)),
+                        material1);
+                }
+            }
+
+            for (let io = 0; io < 2; io++) { // inside=0, outside=1
+                let plane_shift = (2.5 + 4.5*io) * (-1)**wing_rl;
+                for (let tb = 0; tb < 2; tb++) { // top/left=0 bottom/right=1
+                    let material;
+                    if (tb == 0)
+                        material = this.materials.panel_1L;
+                    else
+                        material = this.materials.panel_1R;
+
+                    this.shapes.plane.draw(context, program_state,                                  // Panels on XY-Plane
+                        model_transform.times(Mat4.translation(plane_shift,0,0.5 * (-1)**tb))
+                            .times(Mat4.scale(1, 0.5, 0.5))
+                            .times(Mat4.rotation(Math.PI / 2, 0, 1, 0)),
+                        material);
+                }
             }
         }
     }
@@ -735,14 +1042,12 @@ export class CatInvaders extends Base_Scene {
     {
         let col = [];
         let rot = 0;
-        if (this.level < 3)
+        if (this.level < 4) {
             rot = Math.PI * Math.random();
-        if (this.level < 5)
             col = [this.set_rock_color()];
+        }
         else if (this.level < 8)
-            col = this.set_amogus_color(true);
-        else
-            col = this.set_amogus_color(false);
+            col = this.set_amogus_color();
         this.enemies.push(new Body(this.shapes.enemy, this.materials.enemy_material, vec3(1, 1, 1))
             .emplace(Mat4.translation(position, this.top_of_screen, 0), this.enemy_velocity, 0, col, rot));
         let a = this.enemies.at(this.enemies.length-1);
